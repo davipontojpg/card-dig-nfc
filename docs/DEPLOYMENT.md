@@ -56,18 +56,19 @@ Para envio confiável de convites comerciais:
    - **Site URL**: `https://seu-dominio-estavel.com.br`
    - **Redirect URLs**: adicione `https://seu-dominio-estavel.com.br/auth/set-password` (e `http://localhost:5173/auth/set-password` para testes locais).
 
-## 7. Publicação Frontend no Cloudflare Pages
+## 7. Publicação Frontend na Cloudflare (Pages ou Workers Static Assets)
 
-1. Conecte o repositório GitHub ao **Cloudflare Pages**.
+1. Conecte o repositório GitHub na Cloudflare (**Workers & Pages**).
 2. Configure o build:
    - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-   - O arquivo `public/_redirects` (`/* /index.html 200`) já garante fallback SPA para `/platform/*`, `/app/*` e `/m/:slug`.
-3. Configure as variáveis de ambiente no Cloudflare Pages:
+   - Se usar **Cloudflare Pages**: defina **Build output directory** como `dist` (quando não existe `404.html`, o Pages já ativa o fallback SPA nativo automaticamente para `/platform/*`, `/app/*` e `/m/:slug`).
+   - Se usar **Cloudflare Workers (Static Assets)** com `npx wrangler deploy`: o arquivo [`wrangler.jsonc`](../wrangler.jsonc) na raiz já configura `"directory": "./dist"` e `"not_found_handling": "single-page-application"`.
+3. Configure as variáveis de ambiente de build (tipo **Text**, em **Build variables** no Workers ou **Production** no Pages):
+   - `NODE_VERSION` = `22`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
-   - `VITE_PUBLIC_APP_URL` = **`https://seu-dominio-estavel.com.br`** (domínio definitivo controlado por você — nunca grave tags NFC ou imprima lotes de QR Code apontando para URLs temporárias `.pages.dev` ou `localhost`).
-4. Associe o domínio customizado definitivo no Cloudflare Pages antes de iniciar a impressão de materiais físicos dos clientes.
+   - `VITE_PUBLIC_APP_URL` = **`https://seu-dominio-estavel.com.br`** (domínio definitivo controlado por você — nunca grave tags NFC ou imprima lotes de QR Code apontando para URLs temporárias `.pages.dev`, `.workers.dev` ou `localhost`).
+4. Associe o domínio customizado definitivo antes de iniciar a impressão de materiais físicos dos clientes.
 
 ## 8. Validação Inicial Pós-Deploy
 

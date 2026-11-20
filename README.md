@@ -15,7 +15,7 @@ Plataforma SaaS B2B multi-tenant para criação, gestão e publicação de card�
 - **Frontend**: React 19, TypeScript (strict), Vite 7, Tailwind CSS v4 (`@tailwindcss/vite`), React Router v7, TanStack Query, React Hook Form + Zod v4 (`@hookform/resolvers` v5), Lucide React, `qrcode`.
 - **Backend / BaaS**: Supabase (PostgreSQL, Auth, Storage, RLS, RPCs e Edge Functions em Deno).
 - **Testes**: Vitest + React Testing Library, suíte automatizada PostgreSQL 16 (`scripts/test-db.sh`) e Playwright (`e2e/`).
-- **Hospedagem frontend**: Cloudflare Pages (com fallback SPA em `public/_redirects`).
+- **Hospedagem frontend**: Cloudflare Workers Static Assets / Cloudflare Pages (`wrangler.jsonc` com `not_found_handling: "single-page-application"`).
 
 ## Pré-requisitos
 
