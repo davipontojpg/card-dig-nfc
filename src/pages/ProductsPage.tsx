@@ -326,7 +326,7 @@ export function ProductsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar produto..."
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-9 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white py-2 pr-3 pl-9 text-sm focus:border-zinc-950 focus:outline-none"
                 />
               </div>
 
@@ -573,7 +573,7 @@ export function ProductsPage() {
               <input
                 type="checkbox"
                 {...form.register('is_active')}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
               />
               Ativo no cardápio
             </label>
@@ -581,7 +581,7 @@ export function ProductsPage() {
               <input
                 type="checkbox"
                 {...form.register('is_available')}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
               />
               Disponível hoje
             </label>
@@ -589,7 +589,7 @@ export function ProductsPage() {
               <input
                 type="checkbox"
                 {...form.register('is_featured')}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
               />
               Produto em destaque
             </label>

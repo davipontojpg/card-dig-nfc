@@ -93,7 +93,7 @@ export function StoreDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link to="/app/produtos" className="block">
           <Card className="h-full p-5 transition-shadow hover:shadow-md">
-            <UtensilsCrossed className="h-6 w-6 text-indigo-600" />
+            <UtensilsCrossed className="h-6 w-6 text-zinc-900" />
             <h2 className="mt-3 text-base font-semibold text-slate-900">Gerenciar Produtos</h2>
             <p className="mt-1 text-sm text-slate-600">
               Cadastre itens, ajuste preços, altere disponibilidade rapidamente e adicione opcionais.
@@ -103,7 +103,7 @@ export function StoreDashboardPage() {
 
         <Link to="/app/categorias" className="block">
           <Card className="h-full p-5 transition-shadow hover:shadow-md">
-            <FolderKanban className="h-6 w-6 text-indigo-600" />
+            <FolderKanban className="h-6 w-6 text-zinc-900" />
             <h2 className="mt-3 text-base font-semibold text-slate-900">Organizar Categorias</h2>
             <p className="mt-1 text-sm text-slate-600">
               Defina a ordem de exibição das seções do seu cardápio.
@@ -113,7 +113,7 @@ export function StoreDashboardPage() {
 
         <Link to="/app/acesso" className="block">
           <Card className="h-full p-5 transition-shadow hover:shadow-md">
-            <QrCode className="h-6 w-6 text-indigo-600" />
+            <QrCode className="h-6 w-6 text-zinc-900" />
             <h2 className="mt-3 text-base font-semibold text-slate-900">QR Code e NFC</h2>
             <p className="mt-1 text-sm text-slate-600">
               Baixe o QR Code para suas mesas e consulte o guia de tags NFC quando contratado.
@@ -124,7 +124,7 @@ export function StoreDashboardPage() {
         <Link to="/app/promocoes" className="block">
           <Card className="h-full p-5 transition-shadow hover:shadow-md">
             <div className="flex items-center justify-between">
-              <Percent className="h-6 w-6 text-indigo-600" />
+              <Percent className="h-6 w-6 text-zinc-900" />
               {!hasPromotions ? <Lock className="h-4 w-4 text-slate-400" /> : null}
             </div>
             <h2 className="mt-3 text-base font-semibold text-slate-900">Promoções Agendadas</h2>
@@ -138,7 +138,7 @@ export function StoreDashboardPage() {
 
         <Link to="/app/aparencia" className="block">
           <Card className="h-full p-5 transition-shadow hover:shadow-md">
-            <Palette className="h-6 w-6 text-indigo-600" />
+            <Palette className="h-6 w-6 text-zinc-900" />
             <h2 className="mt-3 text-base font-semibold text-slate-900">Aparência e Publicação</h2>
             <p className="mt-1 text-sm text-slate-600">
               Atualize logotipo, cor principal, contato público e publicação do cardápio.

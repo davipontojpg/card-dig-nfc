@@ -131,7 +131,7 @@ export function StoreAccessPage() {
 
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-indigo-600" />
+              <QrCode className="h-5 w-5 text-zinc-900" />
               <h2 className="text-lg font-bold text-slate-900">QR Code para Mesas e Balcão</h2>
             </div>
             <p className="text-sm text-slate-600">
@@ -166,7 +166,7 @@ export function StoreAccessPage() {
       >
         <Card className="space-y-5 p-5 sm:p-6">
           <div className="flex items-center gap-2.5">
-            <Nfc className="h-6 w-6 text-indigo-600" />
+            <Nfc className="h-6 w-6 text-zinc-900" />
             <div>
               <h2 className="text-lg font-bold text-slate-900">
                 Configuração e Gravação de Etiquetas NFC
@@ -178,12 +178,12 @@ export function StoreAccessPage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-indigo-50 p-4">
-            <p className="text-xs font-semibold text-indigo-900 uppercase">
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold text-zinc-900 uppercase">
               URL exata para gravar no registro NDEF (URL / URI)
             </p>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <code className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-indigo-950 ring-1 ring-indigo-200">
+              <code className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-zinc-950 ring-1 ring-stone-300">
                 {publicUrl}
               </code>
               <Button size="sm" onClick={() => void copyPublicUrl()}>

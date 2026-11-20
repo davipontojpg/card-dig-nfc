@@ -78,7 +78,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             ) : item.type === 'error' ? (
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
             ) : (
-              <Info className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" />
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-zinc-900" />
             )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">{item.title}</p>

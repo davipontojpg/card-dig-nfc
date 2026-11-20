@@ -67,15 +67,17 @@ export function StoreLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-stone-100 px-4 py-10">
       <Card className="w-full max-w-md p-6 sm:p-8">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white">
-            <Store className="h-6 w-6" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-950 text-white">
+            <Store className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Painel do Estabelecimento</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-xl font-bold tracking-tight text-zinc-950">
+              Painel do Estabelecimento
+            </h1>
+            <p className="text-xs text-stone-500">
               Gerencie seu cardápio, preços, adicionais e promoções
             </p>
           </div>
@@ -127,7 +129,7 @@ export function StoreLoginPage() {
                 setResetMode(true);
                 setError(null);
               }}
-              className="block w-full text-center text-xs font-medium text-indigo-600 hover:underline"
+              className="block w-full text-center text-xs font-medium text-zinc-900 hover:underline"
             >
               Primeiro acesso ou esqueci minha senha
             </button>
@@ -152,18 +154,18 @@ export function StoreLoginPage() {
                 setResetMode(false);
                 setError(null);
               }}
-              className="block w-full text-center text-xs font-medium text-slate-600 hover:underline"
+              className="block w-full text-center text-xs font-medium text-stone-600 hover:underline"
             >
               Voltar para o login
             </button>
           </form>
         )}
 
-        <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
-          <Link to="/platform/login" className="hover:text-indigo-600">
+        <div className="mt-6 flex items-center justify-between border-t border-stone-200 pt-4 text-xs text-stone-500">
+          <Link to="/platform/login" className="hover:text-zinc-950">
             Acesso do operador SaaS
           </Link>
-          <Link to="/" className="hover:text-indigo-600">
+          <Link to="/" className="hover:text-zinc-950">
             Início
           </Link>
         </div>

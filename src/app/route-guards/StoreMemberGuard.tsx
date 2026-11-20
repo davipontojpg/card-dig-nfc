@@ -115,7 +115,7 @@ export function StoreMemberGuard({ children }: { children: ReactNode }) {
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Store className="h-4 w-4 text-indigo-600" />
+                      <Store className="h-4 w-4 text-zinc-900" />
                       <h2 className="font-semibold text-slate-900">{m.store_name}</h2>
                       <Badge tone={lifecycle.tone}>{lifecycle.label}</Badge>
                       <Badge tone={sub.tone}>{sub.label}</Badge>

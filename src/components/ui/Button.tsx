@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'outline-dark' | 'danger' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,19 +12,21 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-600 disabled:bg-indigo-300',
+    'bg-zinc-950 text-white hover:bg-zinc-800 focus-visible:ring-zinc-950 disabled:bg-zinc-400',
   secondary:
-    'bg-slate-900 text-white hover:bg-slate-800 focus-visible:ring-slate-900 disabled:bg-slate-400',
+    'bg-stone-100 text-zinc-900 hover:bg-stone-200 focus-visible:ring-zinc-900 disabled:bg-stone-100 disabled:text-stone-400',
   outline:
-    'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 focus-visible:ring-indigo-600 disabled:text-slate-400',
+    'border border-stone-300 bg-white text-zinc-900 hover:bg-stone-50 hover:border-stone-400 focus-visible:ring-zinc-900 disabled:text-stone-400',
+  'outline-dark':
+    'border border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 hover:border-zinc-600 focus-visible:ring-white disabled:text-zinc-500',
   danger:
     'bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-600 disabled:bg-rose-300',
   ghost:
-    'bg-transparent text-slate-700 hover:bg-slate-100 focus-visible:ring-indigo-600 disabled:text-slate-400',
+    'bg-transparent text-stone-700 hover:bg-stone-100 hover:text-zinc-950 focus-visible:ring-zinc-900 disabled:text-stone-400',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 text-sm rounded-lg',
+  sm: 'h-9 px-3.5 text-sm rounded-lg',
   md: 'h-10 px-4 text-sm rounded-xl',
   lg: 'h-12 px-5 text-base rounded-xl',
 };
@@ -56,4 +58,3 @@ export function Button({
     </button>
   );
 }
-

@@ -79,7 +79,7 @@ export function PlatformAdminsPage() {
 
       <Card className="p-5">
         <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
-          <UserPlus className="h-4 w-4 text-indigo-600" />
+          <UserPlus className="h-4 w-4 text-zinc-900" />
           Autorizar operador existente
         </h2>
         <form onSubmit={(e) => void handleAddAdmin(e)} className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -116,7 +116,7 @@ export function PlatformAdminsPage() {
           >
             <div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                <ShieldCheck className="h-4 w-4 text-zinc-900" />
                 <p className="font-semibold text-slate-900">
                   {admin.profile?.full_name || admin.profile?.email || admin.user_id}
                 </p>

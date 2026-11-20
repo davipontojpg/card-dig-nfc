@@ -4,10 +4,10 @@ import { Button } from './Button';
 
 export function LoadingSpinner({ label = 'Carregando...' }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-500">
+    <div className="flex flex-col items-center justify-center gap-3 py-12 text-stone-500">
       <div
         aria-hidden="true"
-        className="h-8 w-8 animate-spin rounded-full border-3 border-indigo-600 border-t-transparent"
+        className="h-8 w-8 animate-spin rounded-full border-3 border-zinc-950 border-t-transparent"
       />
       <p className="text-sm font-medium">{label}</p>
     </div>

@@ -57,9 +57,9 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
     store.lifecycle_status === 'pending_setup';
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 text-slate-900 lg:flex lg:pb-0">
+    <div className="min-h-screen bg-stone-50 pb-20 text-zinc-950 lg:flex lg:pb-0">
       {/* Sidebar Desktop */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-stone-200 bg-white lg:flex">
         <div className="border-b border-slate-100 p-5">
           <div className="flex items-center gap-2.5">
             <span
@@ -98,8 +98,8 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   `flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      ? 'bg-zinc-950 text-white'
+                      : 'text-stone-700 hover:bg-stone-100 hover:text-zinc-950'
                   }`
                 }
               >
@@ -237,7 +237,7 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
               end={item.end}
               className={({ isActive }) =>
                 `flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] font-medium ${
-                  isActive ? 'text-indigo-600' : 'text-slate-600'
+                  isActive ? 'text-zinc-950 font-semibold' : 'text-stone-500'
                 }`
               }
             >

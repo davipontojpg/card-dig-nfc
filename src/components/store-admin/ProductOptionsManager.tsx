@@ -257,7 +257,7 @@ export function ProductOptionsManager({
                             values: values as ProductOptionFormValues,
                           })
                         )}
-                        className="grid gap-3 rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 sm:grid-cols-3"
+                        className="grid gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 sm:grid-cols-3"
                       >
                         <Input
                           label="Nome da opção"
@@ -355,7 +355,7 @@ export function ProductOptionsManager({
                   <input
                     type="checkbox"
                     {...groupForm.register('is_required')}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                    className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
                   />
                   Obrigatório
                 </label>

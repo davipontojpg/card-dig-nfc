@@ -273,7 +273,7 @@ export function CategoriesPage() {
             <input
               type="checkbox"
               {...form.register('is_active')}
-              className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
             />
             Categoria ativa e visível no cardápio público
           </label>

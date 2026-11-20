@@ -541,7 +541,7 @@ function PromotionsManager() {
                           onClick={() => toggleWeekday(day.value)}
                           className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
                             active
-                              ? 'border-indigo-600 bg-indigo-600 text-white'
+                              ? 'border-zinc-950 bg-zinc-950 text-white'
                               : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
@@ -649,7 +649,7 @@ function PromotionsManager() {
                   <div
                     key={prod.id}
                     className={`rounded-xl border p-3 text-sm ${
-                      selected ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white'
+                      selected ? 'border-zinc-900 bg-stone-50' : 'border-stone-200 bg-white'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -658,7 +658,7 @@ function PromotionsManager() {
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleProduct(prod.id)}
-                          className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                          className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
                         />
                         <span className="font-medium text-slate-900">{prod.name}</span>
                         <span className="text-xs text-slate-500">
@@ -676,7 +676,7 @@ function PromotionsManager() {
                     </div>
 
                     {selected ? (
-                      <div className="mt-2 grid gap-2 border-t border-indigo-100 pt-2 sm:grid-cols-2">
+                      <div className="mt-2 grid gap-2 border-t border-stone-200 pt-2 sm:grid-cols-2">
                         <select
                           aria-label={`Regra personalizada para ${prod.name}`}
                           value={selection?.discount_type_override ?? ''}
@@ -728,7 +728,7 @@ function PromotionsManager() {
             <input
               type="checkbox"
               {...form.register('is_active')}
-              className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
             />
             Promoção ativa (desmarque para salvar pausada)
           </label>

@@ -51,15 +51,17 @@ export function SetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-stone-100 px-4 py-10">
       <Card className="w-full max-w-md p-6 sm:p-8">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white">
-            <KeyRound className="h-6 w-6" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-950 text-white">
+            <KeyRound className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Definir senha de acesso</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-xl font-bold tracking-tight text-zinc-950">
+              Definir senha de acesso
+            </h1>
+            <p className="text-xs text-stone-500">
               Conclua seu cadastro para acessar seu estabelecimento
             </p>
           </div>

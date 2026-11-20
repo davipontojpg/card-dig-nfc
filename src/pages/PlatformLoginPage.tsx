@@ -39,15 +39,15 @@ export function PlatformLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
-      <Card className="w-full max-w-md border-slate-800 bg-white p-6 sm:p-8">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-10">
+      <Card className="w-full max-w-md border-stone-200 p-6 sm:p-8">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white">
-            <ShieldCheck className="h-6 w-6" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-950 text-white">
+            <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Console do Operador</h1>
-            <p className="text-xs text-slate-500">Acesso restrito à administração do SaaS</p>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-950">Console do Operador</h1>
+            <p className="text-xs text-stone-500">Acesso restrito à administração do SaaS</p>
           </div>
         </div>
 
@@ -92,11 +92,11 @@ export function PlatformLoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
-          <Link to="/login" className="hover:text-indigo-600">
+        <div className="mt-6 flex items-center justify-between border-t border-stone-200 pt-4 text-xs text-stone-500">
+          <Link to="/login" className="hover:text-zinc-950">
             Painel do estabelecimento
           </Link>
-          <Link to="/" className="hover:text-indigo-600">
+          <Link to="/" className="hover:text-zinc-950">
             Voltar ao início
           </Link>
         </div>

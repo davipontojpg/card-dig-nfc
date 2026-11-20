@@ -26,17 +26,17 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 lg:flex">
+    <div className="min-h-screen bg-stone-100 text-zinc-950 lg:flex">
       {/* Sidebar Desktop */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-950 text-slate-100 lg:flex">
-        <div className="border-b border-slate-800 px-5 py-5">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 text-zinc-100 lg:flex">
+        <div className="border-b border-zinc-800 px-5 py-5">
           <Link to="/platform" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-zinc-950">
               MF
             </span>
             <div>
               <p className="text-sm font-bold text-white">MenuFlow SaaS</p>
-              <p className="text-xs text-slate-400">Console do Operador</p>
+              <p className="text-xs text-zinc-400">Console do Operador</p>
             </div>
           </Link>
         </div>
@@ -52,8 +52,8 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                      ? 'bg-white text-zinc-950'
+                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
                   }`
                 }
               >
@@ -64,19 +64,19 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="border-t border-slate-800 p-4">
+        <div className="border-t border-zinc-800 p-4">
           <div className="mb-3">
             <p className="truncate text-sm font-medium text-white">
               {workspaces?.full_name || workspaces?.email || 'Operador'}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-zinc-400">
               {workspaces?.platform_role === 'super_admin' ? 'Super Admin' : 'Operador'}
             </p>
           </div>
           <Button
-            variant="outline"
+            variant="outline-dark"
             size="sm"
-            className="w-full border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+            className="w-full"
             onClick={() => void signOut()}
           >
             <LogOut className="h-4 w-4" />
@@ -86,9 +86,9 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-3 text-white lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-white lg:hidden">
         <Link to="/platform" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-bold text-zinc-950">
             MF
           </span>
           <span className="text-sm font-bold">MenuFlow Console</span>
@@ -97,14 +97,14 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
           type="button"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
-          className="rounded-lg p-2 text-slate-200 hover:bg-slate-800"
+          className="rounded-lg p-2 text-zinc-200 hover:bg-zinc-800"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </header>
 
       {mobileOpen ? (
-        <div className="border-b border-slate-800 bg-slate-950 px-4 pb-4 text-slate-100 lg:hidden">
+        <div className="border-b border-zinc-800 bg-zinc-950 px-4 pb-4 text-zinc-100 lg:hidden">
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -116,7 +116,7 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
-                      isActive ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-900'
+                      isActive ? 'bg-white text-zinc-950' : 'text-zinc-300 hover:bg-zinc-900'
                     }`
                   }
                 >
@@ -126,11 +126,11 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="mt-3 border-t border-slate-800 pt-3">
+          <div className="mt-3 border-t border-zinc-800 pt-3">
             <Button
-              variant="outline"
+              variant="outline-dark"
               size="sm"
-              className="w-full border-slate-700 bg-slate-900 text-slate-200"
+              className="w-full"
               onClick={() => void signOut()}
             >
               <LogOut className="h-4 w-4" />

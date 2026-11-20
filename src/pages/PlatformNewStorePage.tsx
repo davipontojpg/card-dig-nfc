@@ -273,7 +273,7 @@ export function PlatformNewStorePage() {
                   key={plan.id}
                   className={`cursor-pointer rounded-2xl border p-4 transition-colors ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600'
+                      ? 'border-zinc-950 bg-stone-50 ring-1 ring-zinc-950'
                       : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}
                 >
@@ -284,7 +284,7 @@ export function PlatformNewStorePage() {
                     className="sr-only"
                   />
                   <p className="text-sm font-bold text-slate-900">{plan.name}</p>
-                  <p className="mt-1 text-lg font-extrabold text-indigo-700">
+                  <p className="mt-1 text-lg font-extrabold text-zinc-950">
                     {formatBRL(plan.monthly_price)}/mês
                   </p>
                   <p className="text-xs text-slate-600">

@@ -111,7 +111,7 @@ export function PlatformStoresPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome, slug, responsável ou e-mail..."
-              className="w-full rounded-xl border border-slate-300 bg-white py-2 pr-3 pl-9 text-sm focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-stone-300 bg-white py-2 pr-3 pl-9 text-sm focus:border-zinc-950 focus:outline-none"
             />
           </div>
 
@@ -197,7 +197,7 @@ export function PlatformStoresPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         to={`/platform/stores/${store.id}`}
-                        className="text-base font-bold text-slate-900 hover:text-indigo-700"
+                        className="text-base font-bold text-zinc-950 hover:underline"
                       >
                         {store.name}
                       </Link>

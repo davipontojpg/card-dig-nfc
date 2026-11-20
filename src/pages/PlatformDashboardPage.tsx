@@ -54,7 +54,7 @@ export function PlatformDashboardPage() {
         <Card className="p-5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase">Estabelecimentos</span>
-            <Building2 className="h-4 w-4 text-indigo-600" />
+            <Building2 className="h-4 w-4 text-zinc-900" />
           </div>
           <p className="mt-2 text-3xl font-bold text-slate-900">{data.total_stores}</p>
           <p className="mt-1 text-xs text-slate-500">
@@ -190,7 +190,7 @@ export function PlatformDashboardPage() {
                       <div className="min-w-0">
                         <Link
                           to={`/platform/stores/${item.store_id}`}
-                          className="truncate text-sm font-semibold text-indigo-700 hover:underline"
+                          className="truncate text-sm font-semibold text-zinc-950 hover:underline"
                         >
                           {item.store_name}
                         </Link>

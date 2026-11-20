@@ -190,7 +190,7 @@ export function PublicMenuPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar item no cardápio..."
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pr-3 pl-9 text-sm focus:border-indigo-500 focus:bg-white focus:outline-none"
+                className="w-full rounded-xl border border-stone-300 bg-stone-50 py-2 pr-3 pl-9 text-sm focus:border-zinc-950 focus:bg-white focus:outline-none"
               />
             </div>
 

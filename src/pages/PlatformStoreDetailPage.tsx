@@ -305,7 +305,7 @@ export function PlatformStoreDetailPage() {
         <div>
           <Link
             to="/platform/stores"
-            className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-700"
+            className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 hover:text-zinc-950"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Voltar para estabelecimentos
@@ -385,7 +385,7 @@ export function PlatformStoreDetailPage() {
             onClick={() => setActiveTab(tab.id)}
             className={`shrink-0 rounded-t-xl px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'bg-white text-indigo-700 shadow-xs ring-1 ring-slate-200'
+                ? 'bg-zinc-950 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -463,7 +463,7 @@ export function PlatformStoreDetailPage() {
                 type="checkbox"
                 checked={summaryForm.is_published}
                 onChange={(e) => setSummaryForm((f) => ({ ...f, is_published: e.target.checked }))}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                className="h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
               />
               Cardápio publicado ao público (requer estabelecimento e assinatura ativos)
             </label>
@@ -934,7 +934,7 @@ export function PlatformStoreDetailPage() {
               detail.auditLogs.map((log) => (
                 <div key={log.id} className="py-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-semibold text-indigo-700">
+                    <span className="font-mono text-xs font-semibold text-zinc-900">
                       {log.action}
                     </span>
                     <span className="text-xs text-slate-500">

@@ -332,7 +332,7 @@ export function StoreAppearancePage() {
                 type="checkbox"
                 disabled={!writable}
                 {...form.register('is_published')}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600"
+                className="mt-0.5 h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
               />
               <span>
                 Publicar cardápio ao público

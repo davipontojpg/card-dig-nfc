@@ -73,9 +73,9 @@ export function PlatformPlansPage() {
         ))}
       </div>
 
-      <Card className="border-indigo-200 bg-indigo-50/70 p-4 text-sm text-indigo-950">
+      <Card variant="subtle" className="p-4 text-sm text-zinc-900">
         <div className="flex items-start gap-2.5">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-700" />
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-zinc-900" />
           <p>
             <strong>Observação comercial:</strong> a inclusão de suporte a NFC no plano não inclui
             automaticamente chips, etiquetas físicas, placas, impressão ou frete, que devem ser

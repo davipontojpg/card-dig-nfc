@@ -49,7 +49,7 @@ export function StoreAccountPage() {
       <Card className="space-y-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <ShieldCheck className="h-6 w-6 text-indigo-600" />
+            <ShieldCheck className="h-6 w-6 text-zinc-900" />
             <div>
               <h2 className="text-lg font-bold text-slate-900">{subscription.plan_name}</h2>
               <p className="text-xs text-slate-500">
