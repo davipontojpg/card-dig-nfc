@@ -20,9 +20,48 @@ export interface ResendInviteResult {
   owner_invite_status?: string;
 }
 
-function extractFunctionError(error: unknown, fallback: string): string {
+export async function extractFunctionError(error: unknown, fallback: string): Promise<string> {
   if (error && typeof error === 'object') {
-    const maybeErr = error as { message?: string; context?: { json?: () => Promise<{ error?: string }> } };
+    const maybeErr = error as {
+      message?: string;
+      context?: Response;
+    };
+
+    const res = maybeErr.context;
+    if (res && typeof res === 'object') {
+      const status = typeof res.status === 'number' ? res.status : null;
+      let detail = '';
+
+      try {
+        const clone = typeof res.clone === 'function' ? res.clone() : res;
+        const json = (await clone.json()) as {
+          error?: unknown;
+          message?: unknown;
+          msg?: unknown;
+        };
+        const rawMsg = json?.error ?? json?.message ?? json?.msg;
+        if (typeof rawMsg === 'string' && rawMsg.trim()) {
+          detail = rawMsg.trim();
+        }
+      } catch {
+        try {
+          const text = await res.text();
+          if (text.trim()) {
+            detail = text.trim().slice(0, 240);
+          }
+        } catch {
+          // Ignorar falha de leitura de corpo
+        }
+      }
+
+      if (detail) {
+        return status ? `[HTTP ${status}] ${detail}` : detail;
+      }
+      if (status) {
+        return `Erro HTTP ${status} ao chamar a Edge Function.`;
+      }
+    }
+
     if (maybeErr.message) return maybeErr.message;
   }
   return fallback;
@@ -37,7 +76,7 @@ export const provisioningService = {
     });
     if (error) {
       throw new Error(
-        extractFunctionError(error, 'Erro ao provisionar estabelecimento via Edge Function.')
+        await extractFunctionError(error, 'Erro ao provisionar estabelecimento via Edge Function.')
       );
     }
     if (data && typeof data === 'object' && 'error' in data && data.error) {
@@ -51,7 +90,7 @@ export const provisioningService = {
       body: payload,
     });
     if (error) {
-      throw new Error(extractFunctionError(error, 'Erro ao executar operação de convite.'));
+      throw new Error(await extractFunctionError(error, 'Erro ao executar operação de convite.'));
     }
     if (data && typeof data === 'object' && 'error' in data && data.error) {
       throw new Error(String(data.error));
@@ -59,4 +98,3 @@ export const provisioningService = {
     return data as ResendInviteResult;
   },
 };
-

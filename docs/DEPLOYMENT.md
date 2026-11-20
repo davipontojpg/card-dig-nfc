@@ -34,13 +34,11 @@ A migration `0005` cria o bucket `menu-media` (`public = true`, limite de 5 MB, 
 
 **Nunca** coloque `SUPABASE_SERVICE_ROLE_KEY` em `.env.local` do frontend nem em variáveis `VITE_*`.
 
-Configure os secrets diretamente no ambiente servidor do Supabase e faça o deploy das Edge Functions:
+No Supabase em nuvem, `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já são injetadas automaticamente pelo ambiente servidor das Edge Functions. Faça o deploy com `--no-verify-jwt` para compatibilidade com JWTs assimétricos (`ES256`) e chaves `sb_publishable_...` — a validação criptográfica do JWT (`auth.getUser(jwt)`) e a checagem de operador ativo em `platform_admins` ocorrem dentro de `supabase/functions/_shared/auth.ts`:
 ```bash
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY="<sua-chave-service-role-ou-secret>"
-supabase functions deploy provision-store
-supabase functions deploy resend-store-invite
+npx supabase functions deploy provision-store --no-verify-jwt
+npx supabase functions deploy resend-store-invite --no-verify-jwt
 ```
-As funções utilizam `verify_jwt = true` (`supabase/config.toml`) e checam `platform_admins` internamente.
 
 ## 5. Provisionar o Primeiro `super_admin`
 

@@ -28,8 +28,8 @@ Nenhuma autorização depende de `user_metadata` editável pelo usuário ou de f
 
 - Todas as funções `SECURITY DEFINER` no PostgreSQL fixam `SET search_path = public` (e `storage` quando aplicável), revogam execução de `PUBLIC` e concedem apenas aos papéis mínimos necessários.
 - As Edge Functions `provision-store` e `resend-store-invite`:
-  - Validam JWT via `userClient.auth.getUser()`.
-  - Consultam `platform_admins` com `is_active = true` usando cliente servidor antes de usar `auth.admin`.
+  - Utilizam `verify_jwt = false` no gateway (`supabase/config.toml` / `--no-verify-jwt`) para suportar tokens assimétricos `ES256` e chaves `sb_publishable_...`, executando a validação criptográfica do JWT diretamente no servidor via `adminClient.auth.getUser(jwt)` em `supabase/functions/_shared/auth.ts`.
+  - Consultam `platform_admins` com `is_active = true` usando cliente servidor antes de executar `auth.admin`.
   - Nunca gravam tokens de convite em logs ou respostas.
   - Nunca expõem `SUPABASE_SERVICE_ROLE_KEY` ao frontend (o plugin `validateEnvOnBuild` em `vite.config.ts` bloqueia o build se qualquer variável `VITE_*` contiver `SERVICE_ROLE`, `SECRET` ou `sb_secret_`).
 

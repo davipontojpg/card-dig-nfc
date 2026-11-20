@@ -1,8 +1,10 @@
 project_id = "card-dig-nfc"
 
+# verify_jwt = false no gateway para compatibilidade com tokens assimétricos (ES256)
+# e chaves modernas sb_publishable_. A validação criptográfica do JWT (auth.getUser)
+# e a confirmação ativa em platform_admins são executadas rigorosamente dentro de _shared/auth.ts.
 [functions.provision-store]
-verify_jwt = true
+verify_jwt = false
 
 [functions.resend-store-invite]
-verify_jwt = true
-
+verify_jwt = false

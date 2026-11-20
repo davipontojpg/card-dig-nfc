@@ -3,6 +3,7 @@ import {
   validateProvisionPayload,
   validateResendInvitePayload,
 } from '../../../supabase/functions/_shared/validation';
+import { extractFunctionError } from '../../services/provisioning.service';
 
 describe('Validação das Edge Functions de provisionamento e convites', () => {
   const validPayload = {
@@ -47,6 +48,21 @@ describe('Validação das Edge Functions de provisionamento e convites', () => {
         email: 'dono@exemplo.com.br',
       }).ok
     ).toBe(true);
+  });
+
+  it('extrai mensagem real e status HTTP do corpo Response das Edge Functions', async () => {
+    const response = new Response(
+      JSON.stringify({ error: 'O slug "adega-central" já está em uso por outro estabelecimento.' }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const msg = await extractFunctionError(
+      { message: 'Edge Function returned a non-2xx status code', context: response },
+      'Fallback'
+    );
+
+    expect(msg).toContain('[HTTP 409]');
+    expect(msg).toContain('já está em uso');
   });
 });
 

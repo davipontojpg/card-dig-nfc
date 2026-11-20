@@ -10,18 +10,21 @@ export async function requireActivePlatformAdmin(req: Request): Promise<
   | { ok: true; context: VerifiedOperatorContext }
   | { ok: false; status: number; error: string }
 > {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return { ok: false, status: 401, error: 'Cabeçalho Authorization ausente.' };
+  const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorization');
+  if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {
+    return { ok: false, status: 401, error: 'Cabeçalho Authorization ausente ou inválido.' };
+  }
+
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) {
+    return { ok: false, status: 401, error: 'Token JWT de autenticação ausente.' };
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const publicKey =
-    Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '';
   const serviceRoleKey =
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SECRET_KEY') ?? '';
 
-  if (!supabaseUrl || !publicKey || !serviceRoleKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     return {
       ok: false,
       status: 500,
@@ -29,23 +32,19 @@ export async function requireActivePlatformAdmin(req: Request): Promise<
     };
   }
 
-  const userClient = createClient(supabaseUrl, publicKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const {
-    data: { user },
-    error: authError,
-  } = await userClient.auth.getUser();
-
-  if (authError || !user) {
-    return { ok: false, status: 401, error: 'Sessão inválida ou expirada.' };
-  }
-
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Valida assinatura e vigência do token (compatível com ES256 e chaves legadas)
+  const {
+    data: { user },
+    error: authError,
+  } = await adminClient.auth.getUser(jwt);
+
+  if (authError || !user) {
+    return { ok: false, status: 401, error: 'Sessão inválida ou expirada. Faça login novamente.' };
+  }
 
   const { data: adminRow, error: adminError } = await adminClient
     .from('platform_admins')
@@ -71,4 +70,3 @@ export async function requireActivePlatformAdmin(req: Request): Promise<
     },
   };
 }
-
