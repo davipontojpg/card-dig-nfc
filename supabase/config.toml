@@ -1,0 +1,8 @@
+project_id = "card-dig-nfc"
+
+[functions.provision-store]
+verify_jwt = true
+
+[functions.resend-store-invite]
+verify_jwt = true
+
