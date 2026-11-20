@@ -12,7 +12,7 @@ import {
 import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
 import { categoriesService } from '../services/categories.service';
 import { productsService } from '../services/products.service';
-import { hasFeature } from '../lib/permissions';
+import { hasAnyPromotionFeature, hasFeature } from '../lib/permissions';
 import { buildPublicMenuUrl } from '../lib/env';
 import { Card, Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -21,7 +21,8 @@ import { LoadingSpinner } from '../components/ui/Feedback';
 export function StoreDashboardPage() {
   const { access } = useStoreWorkspace();
   const { store, subscription, features, has_service_access } = access;
-  const hasPromotions = has_service_access && hasFeature(features, 'scheduled_promotions');
+  const hasPromotions = has_service_access && hasAnyPromotionFeature(features);
+  const hasScheduledPromotions = has_service_access && hasFeature(features, 'scheduled_promotions');
   const hasNfc = has_service_access && hasFeature(features, 'nfc_access');
 
   const { data: categories = [], isLoading: catLoading } = useQuery({
@@ -83,7 +84,11 @@ export function StoreDashboardPage() {
               {hasNfc ? 'NFC Liberado' : 'NFC (Plano superior)'}
             </Badge>
             <Badge tone={hasPromotions ? 'success' : 'neutral'}>
-              {hasPromotions ? 'Promoções' : 'Promoções (Plano 3)'}
+              {hasScheduledPromotions
+                ? 'Promoções Agendadas'
+                : hasPromotions
+                  ? 'Promoções Comuns'
+                  : 'Promoções (Plano 2+)'}
             </Badge>
           </div>
         </Card>
@@ -127,11 +132,15 @@ export function StoreDashboardPage() {
               <Percent className="h-6 w-6 text-zinc-900" />
               {!hasPromotions ? <Lock className="h-4 w-4 text-slate-400" /> : null}
             </div>
-            <h2 className="mt-3 text-base font-semibold text-slate-900">Promoções Agendadas</h2>
+            <h2 className="mt-3 text-base font-semibold text-slate-900">
+              {hasScheduledPromotions ? 'Promoções e Agendamentos' : 'Promoções'}
+            </h2>
             <p className="mt-1 text-sm text-slate-600">
-              {hasPromotions
-                ? 'Programe descontos pontuais ou semanais recorrentes com atualização automática.'
-                : 'Recurso exclusivo do plano Cardápio + NFC + Promoções.'}
+              {hasScheduledPromotions
+                ? 'Crie promoções comuns ou programe descontos pontuais e semanais recorrentes.'
+                : hasPromotions
+                  ? 'Crie promoções comuns ativas no cardápio. Agendamentos semanais no plano superior.'
+                  : 'Disponível a partir do plano Cardápio + NFC.'}
             </p>
           </Card>
         </Link>

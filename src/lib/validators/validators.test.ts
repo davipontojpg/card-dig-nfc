@@ -68,6 +68,17 @@ describe('Zod schemas de validação', () => {
       products: [{ product_id: '11111111-1111-4111-8111-111111111111' }],
     });
     expect(valid.success).toBe(true);
+
+    const validAlways = promotionSchema.safeParse({
+      name: 'Oferta da Casa',
+      schedule_type: 'always',
+      discount_type: 'amount_off',
+      discount_value: 5,
+      priority: 0,
+      is_active: true,
+      products: [{ product_id: '11111111-1111-4111-8111-111111111111' }],
+    });
+    expect(validAlways.success).toBe(true);
   });
 
   it('rejeita slug reservado na aparência da loja', () => {

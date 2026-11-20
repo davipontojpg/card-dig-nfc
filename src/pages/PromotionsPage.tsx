@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Edit3, Pause, Play, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Edit3, Lock, Pause, Play, Plus, Trash2 } from 'lucide-react';
 import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
 import { StoreFeatureGuard } from '../app/route-guards/StoreFeatureGuard';
 import { promotionsService, type SavePromotionInput } from '../services/promotions.service';
@@ -25,9 +25,10 @@ import {
   calculatePromotionalPrice,
   derivePromotionStatus,
   getPromotionStatusMeta,
+  hasFeature,
   isSubscriptionWritable,
 } from '../lib/permissions';
-import type { PromotionDiscountType } from '../types/database';
+import type { PromotionDiscountType, PromotionScheduleType } from '../types/database';
 import type { PromotionWithProducts } from '../types/domain';
 import { Badge, Card } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -40,10 +41,10 @@ import { useToast } from '../components/ui/Toast';
 export function PromotionsPage() {
   return (
     <StoreFeatureGuard
-      featureKey="scheduled_promotions"
-      title="Promoções Agendadas e Recorrentes"
-      requiredPlanHint="Recurso exclusivo do plano Cardápio + NFC + Promoções"
-      description="Crie promoções pontuais por data/hora ou recorrências semanais (ex.: toda segunda-feira), calculadas automaticamente no fuso do estabelecimento sem alterar o preço-base. Solicite upgrade ao operador para ativar."
+      featureKey={['basic_promotions', 'scheduled_promotions']}
+      title="Promoções"
+      requiredPlanHint="Disponível a partir do plano Cardápio + NFC"
+      description="Ative promoções comuns no plano Cardápio + NFC ou crie promoções agendadas por data/hora e recorrentes semanais (ex.: toda segunda, toda terça) no plano Cardápio + NFC + Promoções. Solicite upgrade ao operador para ativar."
     >
       <PromotionsManager />
     </StoreFeatureGuard>
@@ -57,6 +58,7 @@ function PromotionsManager() {
   const storeId = access.store.id;
   const timezone = access.store.timezone;
   const writable = isSubscriptionWritable(access);
+  const hasScheduledPromotions = hasFeature(access.features, 'scheduled_promotions');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<PromotionWithProducts | null>(null);
@@ -82,7 +84,7 @@ function PromotionsManager() {
     defaultValues: {
       name: '',
       description: '',
-      schedule_type: 'weekly' as const,
+      schedule_type: 'always' as PromotionScheduleType,
       discount_type: 'percent_off' as const,
       discount_value: 10,
       starts_at_local: '',
@@ -119,6 +121,12 @@ function PromotionsManager() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: PromotionFormValues) => {
+      if (!hasScheduledPromotions && values.schedule_type !== 'always') {
+        throw new Error(
+          'Promoções agendadas (pontuais ou semanais) são exclusivas do plano Cardápio + NFC + Promoções.'
+        );
+      }
+
       // Validar cálculo promocional em todos os produtos selecionados antes de gravar
       for (const item of values.products) {
         const prod = productMap.get(item.product_id);
@@ -206,7 +214,7 @@ function PromotionsManager() {
     form.reset({
       name: '',
       description: '',
-      schedule_type: 'weekly',
+      schedule_type: 'always',
       discount_type: 'percent_off',
       discount_value: 10,
       starts_at_local: '',
@@ -299,10 +307,22 @@ function PromotionsManager() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Promoções Agendadas</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {hasScheduledPromotions ? 'Promoções e Agendamentos' : 'Promoções'}
+          </h1>
           <p className="text-sm text-slate-600">
-            Regras pontuais ou recorrentes avaliadas no fuso <strong>{timezone}</strong> sem
-            alterar o preço-base dos produtos.
+            {hasScheduledPromotions ? (
+              <>
+                Crie promoções comuns ou agendadas (pontuais e semanais recorrentes) avaliadas no
+                fuso <strong>{timezone}</strong> sem alterar o preço-base dos produtos.
+              </>
+            ) : (
+              <>
+                Crie promoções comuns ativas no cardápio sem alterar o preço-base dos produtos.
+                Agendamentos por data/hora e recorrência semanal estão disponíveis no plano{' '}
+                <strong>Cardápio + NFC + Promoções</strong>.
+              </>
+            )}
           </p>
         </div>
         <Button onClick={openCreate} disabled={!writable || products.length === 0}>
@@ -341,7 +361,11 @@ function PromotionsManager() {
       {promotions.length === 0 ? (
         <EmptyState
           title="Nenhuma promoção configurada"
-          description="Crie uma oferta pontual ou semanal recorrente (ex.: Segunda da Casa com 15% OFF) para destacar itens no cardápio público."
+          description={
+            hasScheduledPromotions
+              ? 'Crie uma promoção comum ou agendada (ex.: toda segunda-feira com 15% OFF) para destacar itens no cardápio público.'
+              : 'Crie uma promoção comum para aplicar descontos nos produtos do cardápio público e pausar quando quiser.'
+          }
           action={
             <Button onClick={openCreate} disabled={!writable || products.length === 0}>
               Criar primeira promoção
@@ -353,6 +377,7 @@ function PromotionsManager() {
           {promotions.map((promo) => {
             const derived = derivePromotionStatus(promo, timezone);
             const statusMeta = getPromotionStatusMeta(derived);
+            const requiresHigherPlan = !hasScheduledPromotions && promo.schedule_type !== 'always';
             return (
               <Card key={promo.id} className="p-4 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -361,17 +386,22 @@ function PromotionsManager() {
                       <h2 className="text-base font-bold text-slate-900">{promo.name}</h2>
                       <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
                       <Badge tone="info">Prioridade {promo.priority}</Badge>
+                      {requiresHigherPlan ? (
+                        <Badge tone="warning">Requer plano Cardápio + NFC + Promoções</Badge>
+                      ) : null}
                     </div>
 
                     <p className="text-xs text-slate-600">
-                      {promo.schedule_type === 'once' ? (
+                      {promo.schedule_type === 'always' ? (
+                        <>Promoção comum • Ativa continuamente enquanto ligada</>
+                      ) : promo.schedule_type === 'once' ? (
                         <>
-                          Pontual: {formatDateTimeInTz(promo.starts_at, timezone)} até{' '}
+                          Agendada pontual: {formatDateTimeInTz(promo.starts_at, timezone)} até{' '}
                           {formatDateTimeInTz(promo.ends_at, timezone)}
                         </>
                       ) : (
                         <>
-                          Semanal ({formatWeekdaysSummary(promo.weekdays)}):{' '}
+                          Agendada semanal ({formatWeekdaysSummary(promo.weekdays)}):{' '}
                           {formatTimeShort(promo.start_time)} às {formatTimeShort(promo.end_time)}
                           {promo.valid_from || promo.valid_until
                             ? ` • Validade: ${formatDateInTz(promo.valid_from, timezone)} a ${formatDateInTz(promo.valid_until, timezone)}`
@@ -421,7 +451,7 @@ function PromotionsManager() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!writable}
+                      disabled={!writable || requiresHigherPlan}
                       onClick={() =>
                         toggleMutation.mutate({ id: promo.id, isActive: !promo.is_active })
                       }
@@ -441,7 +471,7 @@ function PromotionsManager() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!writable}
+                      disabled={!writable || requiresHigherPlan}
                       onClick={() => openEdit(promo)}
                     >
                       <Edit3 className="h-3.5 w-3.5" />
@@ -450,7 +480,7 @@ function PromotionsManager() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={!writable}
+                      disabled={!writable || requiresHigherPlan}
                       aria-label={`Excluir ${promo.name}`}
                       onClick={() => setDeleteTarget(promo)}
                     >
@@ -468,7 +498,7 @@ function PromotionsManager() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? `Editar: ${editing.name}` : 'Nova Promoção Agendada'}
+        title={editing ? `Editar: ${editing.name}` : 'Nova Promoção'}
         maxWidthClass="max-w-2xl"
       >
         <form
@@ -501,18 +531,53 @@ function PromotionsManager() {
             rows={2}
           />
 
-          {/* Regra de agendamento */}
+          {/* Regra de vigência / agendamento */}
           <div className="space-y-4 rounded-xl border border-slate-200 p-4">
             <Select
-              label="Tipo de agendamento"
+              label="Tipo de promoção"
               {...form.register('schedule_type')}
-              options={[
-                { value: 'weekly', label: 'Semanal recorrente (dias da semana e horário)' },
-                { value: 'once', label: 'Pontual (data/hora início e término)' },
-              ]}
+              options={
+                hasScheduledPromotions
+                  ? [
+                      {
+                        value: 'always',
+                        label: 'Promoção comum (ativa enquanto ligada, sem agendamento)',
+                      },
+                      {
+                        value: 'weekly',
+                        label: 'Agendada semanal recorrente (ex.: toda segunda, toda terça)',
+                      },
+                      {
+                        value: 'once',
+                        label: 'Agendada pontual (data/hora início e término)',
+                      },
+                    ]
+                  : [
+                      {
+                        value: 'always',
+                        label: 'Promoção comum (ativa enquanto ligada, sem agendamento)',
+                      },
+                    ]
+              }
             />
 
-            {watchedScheduleType === 'once' ? (
+            {!hasScheduledPromotions ? (
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                <p>
+                  <strong>Promoções agendadas</strong> (por data/hora ou recorrentes por dia da
+                  semana, como toda segunda ou toda terça) são exclusivas do plano{' '}
+                  <strong>Cardápio + NFC + Promoções</strong>.
+                </p>
+              </div>
+            ) : null}
+
+            {watchedScheduleType === 'always' ? (
+              <p className="text-xs text-slate-600">
+                Esta promoção entra em vigor imediatamente quando estiver ativa e permanece no
+                cardápio até ser pausada ou excluída.
+              </p>
+            ) : watchedScheduleType === 'once' ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label={`Início (${timezone})`}

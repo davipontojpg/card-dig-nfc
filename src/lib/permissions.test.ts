@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   calculatePromotionalPrice,
   derivePromotionStatus,
+  hasAnyPromotionFeature,
   hasFeature,
 } from './permissions';
 import { isLocalOrPreviewUrl } from './env';
@@ -11,7 +12,27 @@ describe('permissions & promotion helpers', () => {
     const features = ['digital_menu', 'qr_code'];
     expect(hasFeature(features, 'qr_code')).toBe(true);
     expect(hasFeature(features, 'nfc_access')).toBe(false);
+    expect(hasFeature(features, 'basic_promotions')).toBe(false);
     expect(hasFeature(features, 'scheduled_promotions')).toBe(false);
+    expect(hasAnyPromotionFeature(features)).toBe(false);
+    expect(hasAnyPromotionFeature(['digital_menu', 'basic_promotions'])).toBe(true);
+    expect(hasAnyPromotionFeature(['digital_menu', 'scheduled_promotions'])).toBe(true);
+  });
+
+  it('deriva estado administrativo da promoção comum (always)', () => {
+    const baseAlways = {
+      schedule_type: 'always' as const,
+      starts_at: null,
+      ends_at: null,
+      weekdays: null,
+      start_time: null,
+      end_time: null,
+      valid_from: null,
+      valid_until: null,
+    };
+
+    expect(derivePromotionStatus({ ...baseAlways, is_active: true })).toBe('active_now');
+    expect(derivePromotionStatus({ ...baseAlways, is_active: false })).toBe('paused');
   });
 
   it('calcula preço promocional para percent_off, amount_off e fixed_price sem permitir <= 0 ou >= base', () => {

@@ -9,7 +9,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Badge, Card } from '../components/ui/Badge';
+import { Card } from '../components/ui/Badge';
 
 const PLANS = [
   {
@@ -17,7 +17,9 @@ const PLANS = [
     subtitle: 'Essencial para começar com QR Code nas mesas',
     price: 'R$ 19,90',
     period: '/mês',
-    setupFee: 'Implantação: R$ 100,00',
+    setupFeeOriginal: 'R$ 200,00',
+    setupFeePromo: 'R$ 100,00',
+    setupFeeDiscount: '-50%',
     features: [
       'Cardápio público responsivo (/m/seu-slug)',
       'Painel de gestão de categorias, produtos e fotos',
@@ -27,12 +29,15 @@ const PLANS = [
   },
   {
     name: 'Cardápio + NFC',
-    subtitle: 'Acesso instantâneo por aproximação nas mesas',
+    subtitle: 'Acesso por aproximação nas mesas + promoções comuns',
     price: 'R$ 49,90',
     period: '/mês',
-    setupFee: 'Implantação: R$ 150,00',
+    setupFeeOriginal: 'R$ 250,00',
+    setupFeePromo: 'R$ 150,00',
+    setupFeeDiscount: '-40%',
     features: [
       'Tudo do plano Cardápio Digital',
+      'Promoções comuns (ative e pause ofertas a qualquer momento)',
       'Módulo e guia técnico para etiquetas NFC',
       'URL estável pronta para gravação NTAG213',
       'Suporte à implantação (mídia física orçada à parte)',
@@ -40,15 +45,17 @@ const PLANS = [
   },
   {
     name: 'Cardápio + NFC + Promoções',
-    subtitle: 'Operação completa com campanhas agendadas',
+    subtitle: 'Operação completa com campanhas agendadas e recorrentes',
     price: 'R$ 59,90',
     period: '/mês',
-    setupFee: 'Implantação: R$ 100,00',
+    setupFeeOriginal: 'R$ 300,00',
+    setupFeePromo: 'R$ 100,00',
+    setupFeeDiscount: '-67%',
     highlighted: true,
     features: [
-      'Tudo do plano Cardápio + NFC',
-      'Promoções pontuais por data e hora',
-      'Promoções recorrentes semanais (ex.: toda segunda)',
+      'Tudo do plano Cardápio + NFC (inclui promoções comuns)',
+      'Promoções agendadas por data e hora',
+      'Promoções recorrentes semanais (ex.: toda segunda, toda terça)',
       'Elegibilidade prioritária para novos recursos especiais',
     ],
   },
@@ -343,14 +350,57 @@ export function LandingPage() {
                         </span>
                       </div>
 
-                      <div className="mt-3">
-                        {isFeatured ? (
-                          <span className="inline-flex rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-300">
-                            {plan.setupFee}
-                          </span>
-                        ) : (
-                          <Badge tone="neutral">{plan.setupFee}</Badge>
-                        )}
+                      <div className="mt-4">
+                        <div
+                          className={`rounded-xl border px-3 py-2.5 ${
+                            isFeatured
+                              ? 'border-rose-500/30 bg-zinc-900/90'
+                              : 'border-rose-200 bg-rose-50/70'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={`text-[11px] font-semibold tracking-wide uppercase ${
+                                isFeatured ? 'text-zinc-300' : 'text-stone-600'
+                              }`}
+                            >
+                              Implantação promocional
+                            </span>
+                            <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                              {plan.setupFeeDiscount}
+                            </span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-baseline gap-1.5">
+                            <span
+                              className={`text-xs ${
+                                isFeatured ? 'text-zinc-400' : 'text-stone-500'
+                              }`}
+                            >
+                              de
+                            </span>
+                            <span
+                              className={`text-xs line-through ${
+                                isFeatured ? 'text-zinc-500' : 'text-stone-400'
+                              }`}
+                            >
+                              {plan.setupFeeOriginal}
+                            </span>
+                            <span
+                              className={`text-xs ${
+                                isFeatured ? 'text-zinc-400' : 'text-stone-500'
+                              }`}
+                            >
+                              por
+                            </span>
+                            <span
+                              className={`text-sm font-extrabold ${
+                                isFeatured ? 'text-white' : 'text-zinc-950'
+                              }`}
+                            >
+                              {plan.setupFeePromo}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       <ul

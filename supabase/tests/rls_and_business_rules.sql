@@ -57,13 +57,13 @@ begin
   );
   perform pg_temp.assert_true(
     (select array_agg(feature_key order by feature_key) from public.plan_features pf join public.plans p on p.id = pf.plan_id where p.code = 'menu_nfc')
-    = array['digital_menu', 'nfc_access', 'qr_code'],
-    'Plano menu_nfc deve conter digital_menu, qr_code e nfc_access.'
+    = array['basic_promotions', 'digital_menu', 'nfc_access', 'qr_code'],
+    'Plano menu_nfc deve conter digital_menu, qr_code, nfc_access e basic_promotions.'
   );
   perform pg_temp.assert_true(
     (select array_agg(feature_key order by feature_key) from public.plan_features pf join public.plans p on p.id = pf.plan_id where p.code = 'menu_nfc_promotions')
-    = array['digital_menu', 'nfc_access', 'qr_code', 'scheduled_promotions'],
-    'Plano menu_nfc_promotions deve conter os 4 recursos.'
+    = array['basic_promotions', 'digital_menu', 'nfc_access', 'qr_code', 'scheduled_promotions'],
+    'Plano menu_nfc_promotions deve conter os 5 recursos.'
   );
 end $$;
 
@@ -250,17 +250,32 @@ begin
   get diagnostics v_cnt = row_count;
   perform pg_temp.assert_true(v_cnt = 0, 'Editor não pode atualizar stores.');
 
-  -- Owner B (Plano 2 - sem scheduled_promotions) também é bloqueado em promotions
+  -- Owner B (Plano 2 - possui basic_promotions, mas NÃO scheduled_promotions)
   perform pg_temp.set_actor('authenticated', v_owner_b);
   insert into public.categories (id, store_id, name, sort_order) values (v_cat_b, v_store_b, 'Cafés', 1);
+
+  -- Plano 2 PODE criar promoção comum ('always')
+  insert into public.promotions (store_id, name, schedule_type, discount_type, discount_value, is_active)
+  values (v_store_b, 'Promoção Comum Plano 2', 'always', 'percent_off', 10, true);
+
+  -- Plano 2 NÃO pode criar promoção agendada ('once' ou 'weekly')
   v_failed := false;
   begin
     insert into public.promotions (store_id, name, schedule_type, discount_type, discount_value, starts_at, ends_at)
-    values (v_store_b, 'Hack Plano 2', 'once', 'percent_off', 10, now(), now() + interval '1 day');
+    values (v_store_b, 'Hack Plano 2 Once', 'once', 'percent_off', 10, now(), now() + interval '1 day');
   exception when insufficient_privilege then
     v_failed := true;
   end;
-  perform pg_temp.assert_true(v_failed, 'Plano 2 não pode inserir promoção via RLS.');
+  perform pg_temp.assert_true(v_failed, 'Plano 2 não pode inserir promoção agendada pontual via RLS.');
+
+  v_failed := false;
+  begin
+    insert into public.promotions (store_id, name, schedule_type, discount_type, discount_value, weekdays, start_time, end_time)
+    values (v_store_b, 'Hack Plano 2 Weekly', 'weekly', 'percent_off', 10, array[1]::smallint[], '18:00:00', '22:00:00');
+  exception when insufficient_privilege then
+    v_failed := true;
+  end;
+  perform pg_temp.assert_true(v_failed, 'Plano 2 não pode inserir promoção agendada semanal via RLS.');
 
   -- FK composta impede produto da loja B apontar para categoria da loja A
   v_failed := false;

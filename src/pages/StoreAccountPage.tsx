@@ -25,8 +25,13 @@ const ALL_FEATURES = [
     requiredPlan: 'Cardápio + NFC ou Cardápio + NFC + Promoções',
   },
   {
+    key: 'basic_promotions',
+    name: 'Promoções Comuns',
+    requiredPlan: 'Cardápio + NFC ou Cardápio + NFC + Promoções',
+  },
+  {
     key: 'scheduled_promotions',
-    name: 'Promoções Pontuais e Semanais Recorrentes',
+    name: 'Promoções Agendadas (Pontuais e Semanais Recorrentes)',
     requiredPlan: 'Cardápio + NFC + Promoções',
   },
 ] as const;

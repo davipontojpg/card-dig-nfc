@@ -178,6 +178,7 @@ export interface PublicMenuResponse {
   features?: {
     digital_menu: boolean;
     qr_code: boolean;
+    basic_promotions?: boolean;
     scheduled_promotions: boolean;
   };
   categories?: PublicMenuCategory[];

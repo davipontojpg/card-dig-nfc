@@ -6,12 +6,13 @@ export type OnboardingTaskStatus = 'pending' | 'in_progress' | 'done' | 'blocked
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled';
 export type SetupFeeStatus = 'pending' | 'paid' | 'waived';
 export type OwnerInviteStatus = 'not_sent' | 'sent' | 'failed' | 'accepted' | 'linked_existing';
-export type PromotionScheduleType = 'once' | 'weekly';
+export type PromotionScheduleType = 'always' | 'once' | 'weekly';
 export type PromotionDiscountType = 'percent_off' | 'amount_off' | 'fixed_price';
 export type FeatureKey =
   | 'digital_menu'
   | 'qr_code'
   | 'nfc_access'
+  | 'basic_promotions'
   | 'scheduled_promotions'
   | (string & {});
 

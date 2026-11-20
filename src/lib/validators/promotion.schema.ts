@@ -51,7 +51,7 @@ export const promotionSchema = z
       .min(2, 'Informe o nome da promoção.')
       .max(120, 'Máximo de 120 caracteres.'),
     description: z.string().trim().max(400, 'Máximo de 400 caracteres.').optional().nullable(),
-    schedule_type: z.enum(['once', 'weekly']),
+    schedule_type: z.enum(['always', 'once', 'weekly']),
     discount_type: z.enum(['percent_off', 'amount_off', 'fixed_price']),
     discount_value: z.coerce
       .number({ error: 'Informe um valor de desconto válido.' })
@@ -77,6 +77,10 @@ export const promotionSchema = z
         path: ['discount_value'],
         message: 'Desconto percentual deve ser maior que 0% e menor que 100%.',
       });
+    }
+
+    if (data.schedule_type === 'always') {
+      return;
     }
 
     if (data.schedule_type === 'once') {

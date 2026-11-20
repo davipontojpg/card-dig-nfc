@@ -19,7 +19,7 @@ import { useStoreWorkspace } from '../../app/route-guards/StoreMemberGuard';
 import {
   getLifecycleStatusMeta,
   getSubscriptionStatusMeta,
-  hasFeature,
+  hasAnyPromotionFeature,
 } from '../../lib/permissions';
 import { formatDateTimeInTz } from '../../lib/formatters';
 import { Badge } from '../ui/Badge';
@@ -31,7 +31,7 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
   const { store, subscription, features, has_service_access, role } = access;
   const membershipsCount = workspaces?.memberships.length ?? 0;
 
-  const hasPromotions = hasFeature(features, 'scheduled_promotions');
+  const hasPromotions = hasAnyPromotionFeature(features);
   const subMeta = getSubscriptionStatusMeta(subscription.status);
   const lifecycleMeta = getLifecycleStatusMeta(store.lifecycle_status);
 

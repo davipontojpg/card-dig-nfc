@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 
 interface StoreFeatureGuardProps {
-  featureKey: FeatureKey;
+  featureKey: FeatureKey | FeatureKey[];
   title: string;
   requiredPlanHint: string;
   description: string;
@@ -23,7 +23,10 @@ export function StoreFeatureGuard({
   children,
 }: StoreFeatureGuardProps) {
   const { access } = useStoreWorkspace();
-  const allowed = access.has_service_access && hasFeature(access.features, featureKey);
+  const requiredKeys = Array.isArray(featureKey) ? featureKey : [featureKey];
+  const allowed =
+    access.has_service_access &&
+    requiredKeys.some((key) => hasFeature(access.features, key));
 
   if (!allowed) {
     const reasonText = !access.has_service_access

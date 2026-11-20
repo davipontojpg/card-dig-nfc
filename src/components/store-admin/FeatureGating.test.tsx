@@ -97,6 +97,28 @@ describe('FeatureGating & PlatformDashboardPage', () => {
     expect(screen.getByText('Guia técnico NTAG213')).toBeInTheDocument();
   });
 
+  it('libera módulo de promoções para plano intermediário com basic_promotions', () => {
+    vi.spyOn(StoreMemberGuardModule, 'useStoreWorkspace').mockReturnValue({
+      access: makeAccess(['digital_menu', 'qr_code', 'nfc_access', 'basic_promotions']),
+      refetchAccess: async () => {},
+    });
+
+    render(
+      <MemoryRouter>
+        <StoreFeatureGuard
+          featureKey={['basic_promotions', 'scheduled_promotions']}
+          title="Promoções"
+          requiredPlanHint="Plano 2+"
+          description="Upgrade necessário."
+        >
+          <div>Gerenciador de promoções comuns</div>
+        </StoreFeatureGuard>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Gerenciador de promoções comuns')).toBeInTheDocument();
+  });
+
   it('exibe MRR explicitamente identificado como estimativa operacional (não contábil)', async () => {
     vi.spyOn(platformService, 'getDashboardMetrics').mockResolvedValue({
       total_stores: 2,

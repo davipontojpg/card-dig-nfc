@@ -126,7 +126,7 @@ export function PublicMenuPage() {
   const accentColor = store.primary_color || '#0f766e';
   const contrastText = getAccessibleTextColor(accentColor);
   const logoUrl = storageService.getPublicUrl(store.logo_path);
-  const promotionsEnabled = Boolean(features?.scheduled_promotions);
+  const promotionsEnabled = Boolean(features?.basic_promotions || features?.scheduled_promotions);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">

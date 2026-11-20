@@ -156,4 +156,80 @@ describe('PublicMenuPage', () => {
       expect(screen.getByText('Cardápio em preparação')).toBeInTheDocument();
     });
   });
+
+  it('exibe promoção comum (always) quando estabelecimento possui apenas basic_promotions', async () => {
+    vi.spyOn(publicMenuService, 'getBySlug').mockResolvedValue({
+      status: 'ok',
+      evaluated_at: '2026-11-23T22:00:00Z',
+      store: {
+        id: 'store-2',
+        name: 'Café Central',
+        slug: 'cafe-central',
+        business_type: 'Cafeteria',
+        description: null,
+        logo_path: null,
+        primary_color: '#0f766e',
+        public_phone: null,
+        public_address: null,
+        timezone: 'America/Sao_Paulo',
+      },
+      features: {
+        digital_menu: true,
+        qr_code: true,
+        basic_promotions: true,
+        scheduled_promotions: false,
+      },
+      active_promotions: [
+        {
+          promotion_id: 'promo-common-1',
+          name: 'Oferta da Semana',
+          description: 'Desconto direto',
+          schedule_type: 'always',
+          ends_at: null,
+          end_time: null,
+        },
+      ],
+      categories: [
+        {
+          id: 'cat-2',
+          name: 'Cafés',
+          description: null,
+          sort_order: 1,
+          products: [
+            {
+              id: 'prod-3',
+              category_id: 'cat-2',
+              name: 'Cappuccino',
+              description: null,
+              price: 15,
+              image_path: null,
+              is_available: true,
+              is_featured: false,
+              sort_order: 1,
+              promotion: {
+                promotion_id: 'promo-common-1',
+                name: 'Oferta da Semana',
+                description: 'Desconto direto',
+                discount_type: 'fixed_price',
+                discount_value: 12,
+                original_price: 15,
+                promotional_price: 12,
+                schedule_type: 'always',
+              },
+              option_groups: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    renderPublicMenu('cafe-central');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Café Central' })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Ofertas vigentes agora')).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s?12,00/)).toBeInTheDocument();
+  });
 });

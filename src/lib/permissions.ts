@@ -16,6 +16,12 @@ export function hasFeature(
   return features.includes(featureKey);
 }
 
+export function hasAnyPromotionFeature(
+  features: readonly string[] | null | undefined
+): boolean {
+  return hasFeature(features, 'basic_promotions') || hasFeature(features, 'scheduled_promotions');
+}
+
 export function isSubscriptionWritable(access: StoreAccessContext | null | undefined): boolean {
   if (!access) return false;
   return access.has_service_access;
@@ -166,6 +172,10 @@ export function derivePromotionStatus(
   now: Date = new Date()
 ): DerivedPromotionStatus {
   if (!promo.is_active) return 'paused';
+
+  if (promo.schedule_type === 'always') {
+    return 'active_now';
+  }
 
   if (promo.schedule_type === 'once') {
     if (!promo.starts_at || !promo.ends_at) return 'paused';
