@@ -34,10 +34,14 @@ A migration `0005` cria o bucket `menu-media` (`public = true`, limite de 5 MB, 
 
 **Nunca** coloque `SUPABASE_SERVICE_ROLE_KEY` em `.env.local` do frontend nem em variáveis `VITE_*`.
 
-No Supabase em nuvem, `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já são injetadas automaticamente pelo ambiente servidor das Edge Functions. Faça o deploy com `--no-verify-jwt` para compatibilidade com JWTs assimétricos (`ES256`) e chaves `sb_publishable_...` — a validação criptográfica do JWT (`auth.getUser(jwt)`) e a checagem de operador ativo em `platform_admins` ocorrem dentro de `supabase/functions/_shared/auth.ts`:
+No Supabase em nuvem, `SUPABASE_URL` e as chaves servidoras (`SUPABASE_SECRET_KEYS` / `SUPABASE_SERVICE_ROLE_KEY`) já são injetadas automaticamente no ambiente das Edge Functions. Faça o deploy com `--no-verify-jwt` para compatibilidade com JWTs assimétricos (`ES256`) e chaves `sb_publishable_...` — a validação criptográfica do JWT (`auth.getUser(jwt)`) e a checagem de operador ativo em `platform_admins` ocorrem dentro de `supabase/functions/_shared/auth.ts`:
 ```bash
 npx supabase functions deploy provision-store --no-verify-jwt
 npx supabase functions deploy resend-store-invite --no-verify-jwt
+```
+Se as chaves legadas do projeto tiverem sido desativadas e o ambiente servidor retornar erro de chave secreta, configure no servidor do Supabase (nunca no frontend):
+```bash
+npx supabase secrets set SERVICE_SECRET_KEY="sb_secret_..."
 ```
 
 ## 5. Provisionar o Primeiro `super_admin`

@@ -1,0 +1,9 @@
+-- ============================================================================
+-- Migration 0007: Garantir privilégios defensivos para service_role no schema public
+-- ============================================================================
+
+grant usage on schema public to service_role;
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant all on sequences to service_role;
