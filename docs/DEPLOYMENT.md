@@ -17,6 +17,9 @@ Aplique em ordem numérica todos os arquivos de `supabase/migrations/`:
 4. `0004_promotions_and_public_menu_rpc.sql`
 5. `0005_storage_bucket_and_policies.sql`
 6. `0006_seed_plans_and_features.sql` (semeia os 3 planos comerciais oficiais com os valores exatos)
+7. `0007_basic_and_scheduled_promotions.sql` (separa promoções básicas `always` no Plano 2+ das promoções agendadas `once`/`weekly` no Plano 3)
+8. `0008_grant_service_role_tables.sql` (garante privilégios defensivos para `service_role` no schema `public`)
+9. `0009_rls_security_and_performance_hardening.sql` (revoga `EXECUTE` direto em funções de trigger, otimiza políticas RLS com `(select auth.uid())`, elimina sobreposição de políticas em `SELECT` e cria índices para foreign keys)
 
 > **Atenção:** `supabase/seed.sql` é exclusivo para ambiente de desenvolvimento/demonstração. Não execute em produção como dados reais.
 

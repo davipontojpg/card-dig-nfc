@@ -42,7 +42,7 @@ Preencha:
 - `VITE_SUPABASE_PUBLISHABLE_KEY` (ou `VITE_SUPABASE_ANON_KEY` em projetos legados)
 - `VITE_PUBLIC_APP_URL` (ex.: `http://localhost:5173` localmente; em produção usar domínio estável definitivo)
 
-3. Aplique as migrations em `supabase/migrations/` (`0001` a `0006`) no seu projeto Supabase e configure o primeiro `super_admin` conforme [`supabase/scripts/bootstrap_super_admin.sql`](supabase/scripts/bootstrap_super_admin.sql).
+3. Aplique as migrations em `supabase/migrations/` (`0001` a `0009`) no seu projeto Supabase e configure o primeiro `super_admin` conforme [`supabase/scripts/bootstrap_super_admin.sql`](supabase/scripts/bootstrap_super_admin.sql).
 
 4. Inicie o servidor de desenvolvimento:
 
