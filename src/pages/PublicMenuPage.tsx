@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   Clock,
+  Eye,
   MapPin,
   Phone,
   Search,
@@ -28,12 +29,17 @@ import { ErrorState, LoadingSpinner } from '../components/ui/Feedback';
 
 export function PublicMenuPage() {
   const { slug = '' } = useParams();
+  const [searchParams] = useSearchParams();
+  const isPreviewRequest = searchParams.get('preview') === '1';
   const [search, setSearch] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<PublicMenuProduct | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['public-menu', slug],
-    queryFn: () => publicMenuService.getBySlug(slug),
+    queryKey: ['public-menu', slug, isPreviewRequest ? 'preview' : 'public'],
+    queryFn: () =>
+      isPreviewRequest
+        ? publicMenuService.getPreviewBySlug(slug)
+        : publicMenuService.getBySlug(slug),
     enabled: Boolean(slug),
     staleTime: 15_000,
   });
@@ -130,6 +136,19 @@ export function PublicMenuPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      {data.is_preview ? (
+        <div
+          role="status"
+          className="sticky top-0 z-30 flex items-center justify-center gap-2 bg-zinc-950 px-4 py-2 text-center text-xs font-medium text-white"
+        >
+          <Eye className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+          <span>
+            Modo prévia — visível apenas para você e para o operador
+            {data.lifecycle_status === 'pending_setup' ? ' (cardápio ainda não publicado)' : ''}.
+          </span>
+        </div>
+      ) : null}
+
       {/* Cabeçalho do estabelecimento */}
       <header
         className="px-4 pt-8 pb-6 shadow-xs"

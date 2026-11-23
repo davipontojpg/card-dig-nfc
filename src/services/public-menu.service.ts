@@ -9,5 +9,13 @@ export const publicMenuService = {
     if (error) throw error;
     return data as unknown as PublicMenuResponse;
   },
+
+  async getPreviewBySlug(slug: string): Promise<PublicMenuResponse> {
+    const { data, error } = await supabase.rpc('get_store_menu_preview', {
+      p_slug: slug.trim().toLowerCase(),
+    });
+    if (error) throw error;
+    return data as unknown as PublicMenuResponse;
+  },
 };
 

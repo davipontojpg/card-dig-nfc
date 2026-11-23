@@ -257,6 +257,28 @@ export const platformService = {
     if (error) throw error;
   },
 
+  async updateStoreLogo(storeId: string, logoPath: string | null): Promise<void> {
+    const { error } = await supabase
+      .from('stores')
+      .update({ logo_path: logoPath })
+      .eq('id', storeId);
+    if (error) throw error;
+  },
+
+  async reviewStoreOnboarding(
+    storeId: string,
+    decision: 'approve_and_publish' | 'request_changes',
+    notes?: string | null
+  ): Promise<StoreRow> {
+    const { data, error } = await supabase.rpc('platform_review_store_onboarding', {
+      p_store_id: storeId,
+      p_decision: decision,
+      p_notes: notes ?? null,
+    });
+    if (error) throw error;
+    return data;
+  },
+
   async updateOnboardingTask(
     taskId: string,
     status: OnboardingTaskStatus,

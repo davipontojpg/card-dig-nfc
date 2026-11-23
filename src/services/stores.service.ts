@@ -44,5 +44,13 @@ export const storesService = {
     if (error) throw error;
     return Boolean(data);
   },
+
+  async submitOnboardingReview(storeId: string): Promise<StoreRow> {
+    const { data, error } = await supabase.rpc('store_submit_onboarding_review', {
+      p_store_id: storeId,
+    });
+    if (error) throw error;
+    return data;
+  },
 };
 

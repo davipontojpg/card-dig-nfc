@@ -31,6 +31,9 @@ export function StoreAppearancePage() {
   const { store, role } = access;
   const isOwnerOrAdmin = role === 'owner' || role === 'platform_admin';
   const writable = isOwnerOrAdmin && isSubscriptionWritable(access);
+  const isPendingSetup = store.lifecycle_status === 'pending_setup';
+  const canEditSlug = writable && (!isPendingSetup || role === 'platform_admin');
+  const canTogglePublish = writable && !isPendingSetup && access.has_service_access;
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
@@ -52,9 +55,15 @@ export function StoreAppearancePage() {
     },
   });
 
+  const watchedName = useWatch({ control: form.control, name: 'name' });
+  const watchedBusinessType = useWatch({ control: form.control, name: 'business_type' });
+  const watchedDescription = useWatch({ control: form.control, name: 'description' });
   const watchedSlug = useWatch({ control: form.control, name: 'slug' });
   const watchedColor = useWatch({ control: form.control, name: 'primary_color' });
   const slugChanged = normalizeSlug(watchedSlug) !== store.slug;
+  const validAccentColor = /^#[0-9a-fA-F]{6}$/.test(watchedColor || '')
+    ? watchedColor
+    : '#0f766e';
 
   const saveMutation = useMutation({
     mutationFn: async (values: StoreAppearanceFormValues) => {
@@ -76,7 +85,7 @@ export function StoreAppearancePage() {
 
       return storesService.updateAppearance(store.id, {
         name: values.name,
-        slug: values.slug,
+        slug: canEditSlug ? values.slug : store.slug,
         business_type: values.business_type || null,
         description: values.description || null,
         logo_path: nextLogoPath,
@@ -84,7 +93,7 @@ export function StoreAppearancePage() {
         public_phone: values.public_phone || null,
         public_address: values.public_address || null,
         timezone: values.timezone,
-        is_published: values.is_published,
+        is_published: canTogglePublish ? values.is_published : store.is_published,
       });
     },
     onSuccess: async () => {
@@ -171,22 +180,30 @@ export function StoreAppearancePage() {
                   <Input
                     label="Slug da URL pública"
                     required
-                    disabled={!writable}
+                    disabled={!canEditSlug}
                     {...form.register('slug', {
                       onChange: () => setSlugState('idle'),
                     })}
                     error={form.formState.errors.slug?.message}
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!writable}
-                  onClick={() => void handleCheckSlug()}
-                >
-                  Verificar
-                </Button>
+                {canEditSlug ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!canEditSlug}
+                    onClick={() => void handleCheckSlug()}
+                  >
+                    Verificar
+                  </Button>
+                ) : null}
               </div>
+              {isPendingSetup && !canEditSlug ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  O endereço <span className="font-mono">/m/{store.slug}</span> é mantido fixo na
+                  implantação para garantir compatibilidade com QR Code e NFC.
+                </p>
+              ) : null}
               {slugState === 'available' ? (
                 <p className="mt-1 flex items-center gap-1 text-xs text-emerald-700">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Slug disponível.
@@ -293,13 +310,30 @@ export function StoreAppearancePage() {
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Input
-              label="Cor principal (#RRGGBB)"
-              disabled={!writable}
-              {...form.register('primary_color')}
-              error={form.formState.errors.primary_color?.message}
-            />
+          <div className="space-y-3">
+            <div className="flex items-end gap-3">
+              <div className="flex-1">
+                <Input
+                  label="Cor principal"
+                  disabled={!writable}
+                  {...form.register('primary_color')}
+                  error={form.formState.errors.primary_color?.message}
+                />
+              </div>
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                <input
+                  type="color"
+                  aria-label="Escolher cor no seletor"
+                  disabled={!writable}
+                  value={validAccentColor}
+                  onChange={(e) =>
+                    form.setValue('primary_color', e.target.value, { shouldDirty: true })
+                  }
+                  className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                />
+                <span>Escolher cor</span>
+              </label>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               {COLOR_PRESETS.map((hex) => (
                 <button
@@ -307,40 +341,79 @@ export function StoreAppearancePage() {
                   type="button"
                   disabled={!writable}
                   aria-label={`Selecionar cor ${hex}`}
-                  onClick={() => form.setValue('primary_color', hex)}
-                  className="h-8 w-8 rounded-full border-2 border-white shadow ring-1 ring-slate-300"
+                  onClick={() => form.setValue('primary_color', hex, { shouldDirty: true })}
+                  className={`h-8 w-8 rounded-full border-2 border-white shadow ring-1 ${
+                    validAccentColor.toLowerCase() === hex.toLowerCase()
+                      ? 'ring-2 ring-zinc-950'
+                      : 'ring-slate-300'
+                  }`}
                   style={{ backgroundColor: hex }}
                 />
               ))}
-              <span
-                className="ml-2 rounded-lg px-3 py-1 text-xs font-semibold"
-                style={{
-                  backgroundColor: /^#[0-9a-fA-F]{6}$/.test(watchedColor)
-                    ? watchedColor
-                    : '#0f766e',
-                  color: getAccessibleTextColor(watchedColor || '#0f766e'),
-                }}
-              >
-                Prévia de contraste em botões
-              </span>
+            </div>
+          </div>
+
+          {/* Prévia ao vivo do cabeçalho no celular */}
+          <div className="space-y-2 pt-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase">
+              Prévia do topo no celular
+            </p>
+            <div
+              className="rounded-2xl p-4 shadow-xs"
+              style={{
+                backgroundColor: validAccentColor,
+                color: getAccessibleTextColor(validAccentColor),
+              }}
+            >
+              <div className="flex items-center gap-3">
+                {displayedLogo ? (
+                  <img
+                    src={displayedLogo}
+                    alt="Prévia do logotipo"
+                    className="h-14 w-14 shrink-0 rounded-xl bg-white/90 object-cover shadow-xs"
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/20 text-base font-bold">
+                    {(watchedName || store.name).slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold">{watchedName || store.name}</p>
+                  {watchedBusinessType ? (
+                    <p className="truncate text-xs opacity-90">{watchedBusinessType}</p>
+                  ) : null}
+                  {watchedDescription ? (
+                    <p className="mt-0.5 line-clamp-2 text-xs opacity-85">{watchedDescription}</p>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="border-t border-slate-100 pt-4">
-            <label className="flex items-start gap-2.5 text-sm font-medium text-slate-800">
-              <input
-                type="checkbox"
-                disabled={!writable}
-                {...form.register('is_published')}
-                className="mt-0.5 h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
-              />
-              <span>
-                Publicar cardápio ao público
-                <span className="block text-xs font-normal text-slate-500">
-                  Disponível apenas quando o estabelecimento estiver ativo e com assinatura válida.
+            {isPendingSetup ? (
+              <div className="rounded-xl bg-slate-50 p-3.5 text-xs text-slate-600">
+                <strong className="text-slate-800">Publicação inicial:</strong> a primeira liberação
+                ao público é feita pelo operador após você enviar para revisão na tela inicial.
+                Depois de publicado, qualquer alteração feita aqui entra no ar imediatamente, sem
+                nova revisão.
+              </div>
+            ) : (
+              <label className="flex items-start gap-2.5 text-sm font-medium text-slate-800">
+                <input
+                  type="checkbox"
+                  disabled={!canTogglePublish}
+                  {...form.register('is_published')}
+                  className="mt-0.5 h-4 w-4 rounded border-stone-300 text-zinc-950 accent-zinc-950"
+                />
+                <span>
+                  Publicar cardápio ao público
+                  <span className="block text-xs font-normal text-slate-500">
+                    Alterações salvas aqui entram no ar imediatamente no seu cardápio público.
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+            )}
           </div>
         </Card>
 

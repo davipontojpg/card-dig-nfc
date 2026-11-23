@@ -84,6 +84,8 @@ export interface Database {
           is_published: boolean;
           lifecycle_status: StoreLifecycleStatus;
           onboarding_status: OnboardingStatus;
+          onboarding_review_notes: string | null;
+          onboarding_submitted_at: string | null;
           created_by_platform_admin: string | null;
           created_at: string;
           updated_at: string;
@@ -102,6 +104,8 @@ export interface Database {
           is_published?: boolean;
           lifecycle_status?: StoreLifecycleStatus;
           onboarding_status?: OnboardingStatus;
+          onboarding_review_notes?: string | null;
+          onboarding_submitted_at?: string | null;
           created_by_platform_admin?: string | null;
         };
         Update: {
@@ -117,6 +121,8 @@ export interface Database {
           is_published?: boolean;
           lifecycle_status?: StoreLifecycleStatus;
           onboarding_status?: OnboardingStatus;
+          onboarding_review_notes?: string | null;
+          onboarding_submitted_at?: string | null;
         };
         Relationships: [];
       };
@@ -618,9 +624,29 @@ export interface Database {
         Args: { p_store_id: string; p_at?: string };
         Returns: boolean;
       };
+      store_can_edit_workspace: {
+        Args: { p_store_id: string; p_at?: string };
+        Returns: boolean;
+      };
       store_has_feature: {
         Args: { p_store_id: string; p_feature_key: string; p_at?: string };
         Returns: boolean;
+      };
+      store_has_workspace_feature: {
+        Args: { p_store_id: string; p_feature_key: string; p_at?: string };
+        Returns: boolean;
+      };
+      store_submit_onboarding_review: {
+        Args: { p_store_id: string };
+        Returns: Database['public']['Tables']['stores']['Row'];
+      };
+      platform_review_store_onboarding: {
+        Args: { p_store_id: string; p_decision: string; p_notes?: string | null };
+        Returns: Database['public']['Tables']['stores']['Row'];
+      };
+      get_store_menu_preview: {
+        Args: { p_slug: string };
+        Returns: Json;
       };
       get_my_workspaces: {
         Args: Record<string, never>;

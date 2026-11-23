@@ -6,13 +6,13 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { PublicMenuPage } from './PublicMenuPage';
 import { publicMenuService } from '../services/public-menu.service';
 
-function renderPublicMenu(slug: string) {
+function renderPublicMenu(slug: string, query = '') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/m/${slug}`]}>
+      <MemoryRouter initialEntries={[`/m/${slug}${query}`]}>
         <Routes>
           <Route path="/m/:slug" element={<PublicMenuPage />} />
         </Routes>
@@ -231,5 +231,43 @@ describe('PublicMenuPage', () => {
 
     expect(screen.getByText('Ofertas vigentes agora')).toBeInTheDocument();
     expect(screen.getByText(/R\$\s?12,00/)).toBeInTheDocument();
+  });
+
+  it('exibe banner de modo prévia quando acessado com ?preview=1', async () => {
+    vi.spyOn(publicMenuService, 'getPreviewBySlug').mockResolvedValue({
+      status: 'ok',
+      is_preview: true,
+      lifecycle_status: 'pending_setup',
+      is_published: false,
+      evaluated_at: '2026-11-23T22:00:00Z',
+      store: {
+        id: 'store-3',
+        name: 'Pizzaria Nova',
+        slug: 'pizzaria-nova',
+        business_type: 'Pizzaria',
+        description: null,
+        logo_path: null,
+        primary_color: '#b45309',
+        public_phone: null,
+        public_address: null,
+        timezone: 'America/Sao_Paulo',
+      },
+      features: {
+        digital_menu: true,
+        qr_code: true,
+        basic_promotions: false,
+        scheduled_promotions: false,
+      },
+      active_promotions: [],
+      categories: [],
+    });
+
+    renderPublicMenu('pizzaria-nova', '?preview=1');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Pizzaria Nova' })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Modo prévia/i)).toBeInTheDocument();
   });
 });

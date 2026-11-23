@@ -1,24 +1,33 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  Circle,
   Copy,
   ExternalLink,
+  Eye,
+  ImagePlus,
   Mail,
+  MessageSquareWarning,
   RefreshCw,
+  Rocket,
+  Trash2,
   UserCheck,
   UserPlus,
 } from 'lucide-react';
 import { platformService } from '../services/platform.service';
 import { provisioningService } from '../services/provisioning.service';
+import { storageService } from '../services/storage.service';
 import { subscriptionsService } from '../services/subscriptions.service';
 import { buildPublicMenuUrl } from '../lib/env';
 import {
   COMMON_TIMEZONES,
   formatBRL,
   formatDateTimeInTz,
+  getAccessibleTextColor,
   normalizeSlug,
 } from '../lib/formatters';
 import {
@@ -69,6 +78,10 @@ export function PlatformStoreDetailPage() {
   const [inviteEditorModalOpen, setInviteEditorModalOpen] = useState(false);
   const [editorEmail, setEditorEmail] = useState('');
   const [editorName, setEditorName] = useState('');
+
+  const [requestChangesModalOpen, setRequestChangesModalOpen] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
 
   const { data: detail, isLoading, error, refetch } = useQuery({
     queryKey: ['platform-store-detail', storeId],
@@ -260,6 +273,77 @@ export function PlatformStoreDetailPage() {
     },
   });
 
+  const uploadLogoMutation = useMutation({
+    mutationFn: async (file: File) => {
+      storageService.validateImageFile(file);
+      const nextPath = await storageService.uploadMenuImage(
+        storeId,
+        'branding',
+        file,
+        detail?.store.logo_path ?? null
+      );
+      await platformService.updateStoreLogo(storeId, nextPath);
+    },
+    onSuccess: async () => {
+      await invalidateAll();
+      toast.success('Logotipo atualizado com sucesso!');
+    },
+    onError: (err) => {
+      toast.error('Erro ao enviar logotipo', err instanceof Error ? err.message : 'Erro');
+    },
+  });
+
+  const removeLogoMutation = useMutation({
+    mutationFn: async () => {
+      const currentPath = detail?.store.logo_path;
+      if (currentPath) {
+        await storageService.removeMenuImage(storeId, currentPath);
+      }
+      await platformService.updateStoreLogo(storeId, null);
+    },
+    onSuccess: async () => {
+      await invalidateAll();
+      toast.success('Logotipo removido.');
+    },
+    onError: (err) => {
+      toast.error('Erro ao remover logotipo', err instanceof Error ? err.message : 'Erro');
+    },
+  });
+
+  const reviewOnboardingMutation = useMutation({
+    mutationFn: (input: {
+      decision: 'approve_and_publish' | 'request_changes';
+      notes?: string | null;
+    }) => platformService.reviewStoreOnboarding(storeId, input.decision, input.notes),
+    onSuccess: async (_store, variables) => {
+      setApproveConfirmOpen(false);
+      setRequestChangesModalOpen(false);
+      setReviewNotes('');
+      await invalidateAll();
+      if (variables.decision === 'approve_and_publish') {
+        toast.success(
+          'Estabelecimento aprovado e publicado!',
+          'O cardápio já está no ar e futuras alterações do dono entram ao vivo automaticamente.'
+        );
+      } else {
+        toast.success(
+          'Ajustes solicitados ao dono.',
+          'Sua observação já está visível no painel do estabelecimento.'
+        );
+      }
+    },
+    onError: (err) => {
+      toast.error('Erro na revisão', err instanceof Error ? err.message : 'Erro');
+    },
+  });
+
+  function handleLogoFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    uploadLogoMutation.mutate(file);
+  }
+
   const inviteActionMutation = useMutation({
     mutationFn: provisioningService.resendOrManageInvite,
     onSuccess: async (res) => {
@@ -289,6 +373,11 @@ export function PlatformStoreDetailPage() {
   const onboardingMeta = getOnboardingStatusMeta(store.onboarding_status);
   const subMeta = subscription ? getSubscriptionStatusMeta(subscription.status) : null;
   const publicUrl = buildPublicMenuUrl(store.slug);
+  const logoUrl = storageService.getPublicUrl(store.logo_path);
+  const isPendingSetup = store.lifecycle_status === 'pending_setup';
+  const hasOwnerMember = detail.memberships.some((m) => m.role === 'owner');
+  const menuPreviewLink =
+    isPendingSetup || !store.is_published ? `/m/${store.slug}?preview=1` : `/m/${store.slug}`;
 
   const tabs: Array<{ id: DetailTab; label: string }> = [
     { id: 'summary', label: 'Resumo' },
@@ -444,11 +533,92 @@ export function PlatformStoreDetailPage() {
                 value={summaryForm.public_address}
                 onChange={(e) => setSummaryForm((f) => ({ ...f, public_address: e.target.value }))}
               />
-              <Input
-                label="Cor principal (#RRGGBB)"
-                value={summaryForm.primary_color}
-                onChange={(e) => setSummaryForm((f) => ({ ...f, primary_color: e.target.value }))}
-              />
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="Cor principal (#RRGGBB)"
+                    value={summaryForm.primary_color}
+                    onChange={(e) =>
+                      setSummaryForm((f) => ({ ...f, primary_color: e.target.value }))
+                    }
+                  />
+                </div>
+                <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                  <input
+                    type="color"
+                    aria-label="Selecionar cor principal"
+                    value={
+                      /^#[0-9a-fA-F]{6}$/.test(summaryForm.primary_color)
+                        ? summaryForm.primary_color
+                        : '#0f766e'
+                    }
+                    onChange={(e) =>
+                      setSummaryForm((f) => ({ ...f, primary_color: e.target.value }))
+                    }
+                    className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                  />
+                  <span>Cor</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-center gap-3">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={`Logotipo de ${store.name}`}
+                    className="h-14 w-14 rounded-xl border border-slate-200 bg-white object-cover"
+                  />
+                ) : (
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-xl text-base font-bold"
+                    style={{
+                      backgroundColor: summaryForm.primary_color || '#0f766e',
+                      color: getAccessibleTextColor(summaryForm.primary_color || '#0f766e'),
+                    }}
+                  >
+                    {store.name.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Logotipo do estabelecimento</p>
+                  <p className="text-xs text-slate-500">
+                    {logoUrl
+                      ? 'Logotipo cadastrado. Você pode substituir caso o cliente envie outro arquivo.'
+                      : 'Nenhum logotipo enviado ainda. O dono pode enviar pelo celular ou você pode subir aqui.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                  <ImagePlus className="h-3.5 w-3.5" />
+                  {uploadLogoMutation.isPending
+                    ? 'Enviando...'
+                    : logoUrl
+                      ? 'Trocar logo'
+                      : 'Enviar logo'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={uploadLogoMutation.isPending}
+                    onChange={handleLogoFileChange}
+                    className="sr-only"
+                  />
+                </label>
+                {logoUrl ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    isLoading={removeLogoMutation.isPending}
+                    onClick={() => removeLogoMutation.mutate()}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remover
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
             <Textarea
@@ -701,72 +871,259 @@ export function PlatformStoreDetailPage() {
 
       {/* Aba Onboarding */}
       {activeTab === 'onboarding' ? (
-        <Card className="space-y-5 p-5 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">Checklist de Implantação</h2>
-              <p className="text-xs text-slate-500">
-                Acompanhe pendências operacionais até a publicação do estabelecimento.
-              </p>
-            </div>
-            <div className="w-full sm:w-64">
-              <Select
-                label="Status geral do onboarding"
-                value={store.onboarding_status}
-                onChange={(e) => onboardingStatusMutation.mutate(e.target.value as OnboardingStatus)}
-                options={[
-                  { value: 'pending_data', label: 'Aguardando dados' },
-                  { value: 'in_setup', label: 'Em configuração' },
-                  { value: 'awaiting_client', label: 'Aguardando cliente' },
-                  { value: 'ready', label: 'Pronto para publicar' },
-                  { value: 'completed', label: 'Concluído' },
-                ]}
-              />
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* Painel de revisão rápida do que o dono preencheu */}
+          <Card className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold text-slate-900">
+                    Revisão do Estabelecimento
+                  </h2>
+                  <Badge tone={onboardingMeta.tone}>{onboardingMeta.label}</Badge>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {isPendingSetup
+                    ? 'O dono configura identidade visual, categorias e produtos pelo celular. Revise abaixo e publique com 1 clique.'
+                    : 'Implantação concluída. Alterações feitas pelo dono no cardápio já vão ao ar automaticamente, sem precisar de nova revisão.'}
+                </p>
+                {store.onboarding_submitted_at ? (
+                  <p className="mt-1 text-xs text-emerald-700">
+                    Enviado para revisão pelo dono em{' '}
+                    <strong>{formatDateTimeInTz(store.onboarding_submitted_at)}</strong>.
+                  </p>
+                ) : null}
+              </div>
 
-          <div className="divide-y divide-slate-100">
-            {detail.onboardingTasks.map((task) => (
-              <div
-                key={task.id}
-                className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2
-                    className={`mt-0.5 h-5 w-5 shrink-0 ${
-                      task.status === 'done' ? 'text-emerald-600' : 'text-slate-300'
-                    }`}
-                  />
+              <div className="flex flex-wrap gap-2">
+                <Link to={menuPreviewLink} target="_blank" rel="noreferrer">
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4" />
+                    {isPendingSetup || !store.is_published ? 'Abrir prévia' : 'Abrir cardápio'}
+                  </Button>
+                </Link>
+                {isPendingSetup ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setReviewNotes(store.onboarding_review_notes ?? '');
+                        setRequestChangesModalOpen(true);
+                      }}
+                    >
+                      <MessageSquareWarning className="h-4 w-4" />
+                      Pedir ajustes
+                    </Button>
+                    <Button size="sm" onClick={() => setApproveConfirmOpen(true)}>
+                      <Rocket className="h-4 w-4" />
+                      Aprovar e Publicar
+                    </Button>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            {store.onboarding_review_notes ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-950">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{task.title}</p>
-                    {task.completed_at ? (
-                      <p className="text-xs text-slate-500">
-                        Concluído em {formatDateTimeInTz(task.completed_at)}
-                      </p>
-                    ) : null}
+                    <p className="font-semibold">Última observação enviada ao dono:</p>
+                    <p className="mt-0.5">{store.onboarding_review_notes}</p>
                   </div>
                 </div>
-                <select
-                  aria-label={`Status de ${task.title}`}
-                  value={task.status}
-                  onChange={(e) =>
-                    taskMutation.mutate({
-                      taskId: task.id,
-                      status: e.target.value as OnboardingTaskStatus,
-                      notes: task.notes,
-                    })
-                  }
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm"
-                >
-                  <option value="pending">Pendente</option>
-                  <option value="in_progress">Em andamento</option>
-                  <option value="done">Concluída</option>
-                  <option value="blocked">Bloqueada</option>
-                </select>
               </div>
-            ))}
-          </div>
-        </Card>
+            ) : null}
+
+            {/* Indicadores automáticos lidos do banco */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={`Logo de ${store.name}`}
+                      className="h-12 w-12 shrink-0 rounded-xl border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold"
+                      style={{
+                        backgroundColor: store.primary_color || '#0f766e',
+                        color: getAccessibleTextColor(store.primary_color || '#0f766e'),
+                      }}
+                    >
+                      {store.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      {logoUrl ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                      ) : (
+                        <Circle className="h-4 w-4 shrink-0 text-slate-300" />
+                      )}
+                      <p className="truncate text-sm font-semibold text-slate-900">Logotipo</p>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {logoUrl ? 'Enviado e pronto' : 'Ainda não enviado'}
+                    </p>
+                  </div>
+                </div>
+                <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                  <ImagePlus className="h-3.5 w-3.5" />
+                  {uploadLogoMutation.isPending ? 'Enviando...' : logoUrl ? 'Trocar' : 'Subir'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={uploadLogoMutation.isPending}
+                    onChange={handleLogoFileChange}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <p className="text-sm font-semibold text-slate-900">Identidade e contato</p>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1">
+                      <span
+                        className="inline-block h-3 w-3 rounded-full border border-slate-300"
+                        style={{ backgroundColor: store.primary_color }}
+                      />
+                      <span className="font-mono">{store.primary_color}</span>
+                    </span>
+                    <span>•</span>
+                    <span>{store.public_phone ? store.public_phone : 'Sem telefone público'}</span>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('summary')}>
+                  Editar
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    {detail.menuStats.activeProductsCount > 0 ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="h-4 w-4 shrink-0 text-slate-300" />
+                    )}
+                    <p className="text-sm font-semibold text-slate-900">Cardápio cadastrado</p>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {detail.menuStats.categoriesCount} categorias •{' '}
+                    {detail.menuStats.activeProductsCount} produtos ativos
+                  </p>
+                </div>
+                <Link to={menuPreviewLink} target="_blank" rel="noreferrer">
+                  <Button variant="ghost" size="sm">
+                    Revisar
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    {hasOwnerMember ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Circle className="h-4 w-4 shrink-0 text-slate-300" />
+                    )}
+                    <p className="text-sm font-semibold text-slate-900">Acesso do proprietário</p>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {hasOwnerMember
+                      ? `Proprietário vinculado (${internal?.owner_invite_status ?? 'sent'})`
+                      : `Convite pendente (${internal?.owner_invite_status ?? 'not_sent'})`}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('access')}>
+                  Ver acesso
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Checklist operacional (QR Code, NFC e etapas internas) */}
+          <Card className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">
+                  Checklist Operacional (QR Code / NFC)
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Acompanhe etapas internas e entregas físicas até concluir a implantação.
+                </p>
+              </div>
+              <div className="w-full sm:w-64">
+                <Select
+                  label="Status geral do onboarding"
+                  value={store.onboarding_status}
+                  onChange={(e) =>
+                    onboardingStatusMutation.mutate(e.target.value as OnboardingStatus)
+                  }
+                  options={[
+                    { value: 'pending_data', label: 'Aguardando dados' },
+                    { value: 'in_setup', label: 'Em configuração' },
+                    { value: 'awaiting_client', label: 'Aguardando ajustes do cliente' },
+                    { value: 'ready', label: 'Pronto para revisão' },
+                    { value: 'completed', label: 'Concluído' },
+                  ]}
+                />
+              </div>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {detail.onboardingTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2
+                      className={`mt-0.5 h-5 w-5 shrink-0 ${
+                        task.status === 'done' ? 'text-emerald-600' : 'text-slate-300'
+                      }`}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{task.title}</p>
+                      {task.completed_at ? (
+                        <p className="text-xs text-slate-500">
+                          Concluído em {formatDateTimeInTz(task.completed_at)}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <select
+                    aria-label={`Status de ${task.title}`}
+                    value={task.status}
+                    onChange={(e) =>
+                      taskMutation.mutate({
+                        taskId: task.id,
+                        status: e.target.value as OnboardingTaskStatus,
+                        notes: task.notes,
+                      })
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm"
+                  >
+                    <option value="pending">Pendente</option>
+                    <option value="in_progress">Em andamento</option>
+                    <option value="done">Concluída</option>
+                    <option value="blocked">Bloqueada</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       ) : null}
 
       {/* Aba Acesso */}
@@ -910,10 +1267,19 @@ export function PlatformStoreDetailPage() {
                 <Copy className="h-3.5 w-3.5" />
                 Copiar URL
               </Button>
-              <Link to={`/m/${store.slug}`} target="_blank" rel="noreferrer">
+              <Link to={menuPreviewLink} target="_blank" rel="noreferrer">
                 <Button size="sm">
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  Abrir cardápio
+                  {isPendingSetup || !store.is_published ? (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      Abrir prévia
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Abrir cardápio
+                    </>
+                  )}
                 </Button>
               </Link>
             </div>
@@ -970,6 +1336,65 @@ export function PlatformStoreDetailPage() {
           placeholder="Ex.: Solicitação comercial / inadimplência / encerramento"
         />
       </ConfirmDialog>
+
+      {/* Modal confirmar aprovação e publicação */}
+      <ConfirmDialog
+        open={approveConfirmOpen}
+        onClose={() => setApproveConfirmOpen(false)}
+        onConfirm={() =>
+          reviewOnboardingMutation.mutate({
+            decision: 'approve_and_publish',
+          })
+        }
+        title="Aprovar revisão e publicar cardápio"
+        description="O estabelecimento passará para Ativo, o cardápio público ficará imediatamente disponível em /m/:slug e futuras alterações feitas pelo dono entrarão no ar na hora sem precisar de nova revisão."
+        variant="primary"
+        isLoading={reviewOnboardingMutation.isPending}
+      />
+
+      {/* Modal pedir ajustes ao dono */}
+      <Modal
+        open={requestChangesModalOpen}
+        onClose={() => setRequestChangesModalOpen(false)}
+        title="Solicitar ajustes ao estabelecimento"
+        description="Escreva de forma objetiva o que precisa ser ajustado. Essa mensagem aparecerá no topo do painel do dono no celular."
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            reviewOnboardingMutation.mutate({
+              decision: 'request_changes',
+              notes: reviewNotes,
+            });
+          }}
+          className="space-y-4"
+        >
+          <Textarea
+            label="O que precisa ajustar?"
+            required
+            rows={4}
+            value={reviewNotes}
+            onChange={(e) => setReviewNotes(e.target.value)}
+            placeholder="Ex.: A logo está com fundo branco recortado, envie em PNG transparente; e confira o preço do X-Salada."
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRequestChangesModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              isLoading={reviewOnboardingMutation.isPending}
+              disabled={!reviewNotes.trim()}
+            >
+              Enviar solicitação de ajuste
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Modal convidar editor */}
       <Modal

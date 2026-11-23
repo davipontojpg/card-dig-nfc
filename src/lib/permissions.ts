@@ -24,7 +24,7 @@ export function hasAnyPromotionFeature(
 
 export function isSubscriptionWritable(access: StoreAccessContext | null | undefined): boolean {
   if (!access) return false;
-  return access.has_service_access;
+  return Boolean(access.can_edit_workspace ?? access.has_service_access);
 }
 
 export function getSubscriptionStatusMeta(status: SubscriptionStatus): {
@@ -93,9 +93,9 @@ export function getOnboardingStatusMeta(status: OnboardingStatus): {
     case 'in_setup':
       return { label: 'Em configuração', tone: 'warning' };
     case 'awaiting_client':
-      return { label: 'Aguardando cliente', tone: 'neutral' };
+      return { label: 'Aguardando ajustes do cliente', tone: 'warning' };
     case 'ready':
-      return { label: 'Pronto para publicar', tone: 'success' };
+      return { label: 'Pronto para revisão', tone: 'success' };
     case 'completed':
       return { label: 'Concluído', tone: 'success' };
   }

@@ -20,6 +20,7 @@ import {
   getLifecycleStatusMeta,
   getSubscriptionStatusMeta,
   hasAnyPromotionFeature,
+  isSubscriptionWritable,
 } from '../../lib/permissions';
 import { formatDateTimeInTz } from '../../lib/formatters';
 import { Badge } from '../ui/Badge';
@@ -32,8 +33,13 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
   const membershipsCount = workspaces?.memberships.length ?? 0;
 
   const hasPromotions = hasAnyPromotionFeature(features);
+  const canEdit = isSubscriptionWritable(access);
   const subMeta = getSubscriptionStatusMeta(subscription.status);
   const lifecycleMeta = getLifecycleStatusMeta(store.lifecycle_status);
+  const isPendingSetup = store.lifecycle_status === 'pending_setup';
+  const menuLink =
+    isPendingSetup || !store.is_published ? `/m/${store.slug}?preview=1` : `/m/${store.slug}`;
+  const menuLinkLabel = isPendingSetup || !store.is_published ? 'Prévia do cardápio' : 'Ver cardápio público';
 
   const navItems = [
     { to: '/app', label: 'Início', icon: LayoutDashboard, end: true, locked: false },
@@ -52,9 +58,9 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
   ];
 
   const showWarningBanner =
-    !has_service_access ||
+    !canEdit ||
     subscription.status === 'past_due' ||
-    store.lifecycle_status === 'pending_setup';
+    isPendingSetup;
 
   return (
     <div className="min-h-screen bg-stone-50 pb-20 text-zinc-950 lg:flex lg:pb-0">
@@ -115,13 +121,13 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
 
         <div className="space-y-2 border-t border-slate-100 p-4">
           <Link
-            to={`/m/${store.slug}`}
+            to={menuLink}
             target="_blank"
             rel="noreferrer"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            Ver cardápio público
+            {menuLinkLabel}
           </Link>
           <Button variant="ghost" size="sm" className="w-full" onClick={() => void signOut()}>
             <LogOut className="h-4 w-4" />
@@ -167,10 +173,12 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
                 <ArrowLeftRight className="h-3.5 w-3.5" />
               </Button>
             ) : null}
-            <Link to={`/m/${store.slug}`} target="_blank" rel="noreferrer">
+            <Link to={menuLink} target="_blank" rel="noreferrer">
               <Button variant="outline" size="sm">
                 <ExternalLink className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Cardápio</span>
+                <span className="hidden sm:inline">
+                  {isPendingSetup || !store.is_published ? 'Prévia' : 'Cardápio'}
+                </span>
               </Button>
             </Link>
             <Button
@@ -188,17 +196,47 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
         {showWarningBanner ? (
           <div
             role="status"
-            className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 lg:px-8"
+            className={`border-b px-4 py-3 text-sm lg:px-8 ${
+              isPendingSetup && store.onboarding_status === 'ready'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+                : 'border-amber-200 bg-amber-50 text-amber-900'
+            }`}
           >
             <div className="flex items-start gap-2.5">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+              <AlertTriangle
+                className={`mt-0.5 h-4 w-4 shrink-0 ${
+                  isPendingSetup && store.onboarding_status === 'ready'
+                    ? 'text-emerald-700'
+                    : 'text-amber-700'
+                }`}
+              />
               <div>
-                {store.lifecycle_status === 'pending_setup' ? (
-                  <p>
-                    <strong>Estabelecimento em implantação:</strong> o cardápio público só ficará
-                    disponível após ativação comercial pelo operador da plataforma.
-                  </p>
-                ) : subscription.status === 'past_due' && has_service_access ? (
+                {isPendingSetup ? (
+                  store.onboarding_status === 'awaiting_client' && store.onboarding_review_notes ? (
+                    <p>
+                      <strong>Ajustes solicitados na revisão:</strong> {store.onboarding_review_notes}{' '}
+                      <Link to="/app" className="font-semibold underline">
+                        Ver passos e reenviar
+                      </Link>
+                      .
+                    </p>
+                  ) : store.onboarding_status === 'ready' ? (
+                    <p>
+                      <strong>Enviado para revisão inicial:</strong> o operador vai conferir seu
+                      cardápio e liberar a publicação. Depois de publicado, suas alterações entram no
+                      ar imediatamente.
+                    </p>
+                  ) : (
+                    <p>
+                      <strong>Modo implantação:</strong> você já pode subir seu logotipo, escolher
+                      cores e cadastrar categorias e produtos. Quando terminar, clique em{' '}
+                      <Link to="/app" className="font-semibold underline">
+                        Enviar para revisão no Início
+                      </Link>
+                      .
+                    </p>
+                  )
+                ) : subscription.status === 'past_due' && canEdit ? (
                   <p>
                     <strong>Assinatura em atraso:</strong> seu acesso permanece em período de
                     tolerância até{' '}

@@ -39,6 +39,7 @@ export interface WorkspaceMembership {
   plan_code: string;
   plan_name: string;
   has_service_access: boolean;
+  can_edit_workspace?: boolean;
   features: FeatureKey[];
 }
 
@@ -71,6 +72,7 @@ export interface StoreAccessContext {
     grace_until: string | null;
   };
   has_service_access: boolean;
+  can_edit_workspace?: boolean;
   features: FeatureKey[];
 }
 
@@ -162,6 +164,9 @@ export interface PublicMenuCategory {
 
 export interface PublicMenuResponse {
   status: 'ok' | 'not_found' | 'unpublished' | 'unavailable';
+  is_preview?: boolean;
+  lifecycle_status?: StoreLifecycleStatus;
+  is_published?: boolean;
   evaluated_at?: string;
   store?: {
     id: string;

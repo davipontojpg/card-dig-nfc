@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Lock } from 'lucide-react';
 import type { FeatureKey } from '../../types/database';
-import { hasFeature } from '../../lib/permissions';
+import { hasFeature, isSubscriptionWritable } from '../../lib/permissions';
 import { useStoreWorkspace } from './StoreMemberGuard';
 import { Card } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -24,12 +24,13 @@ export function StoreFeatureGuard({
 }: StoreFeatureGuardProps) {
   const { access } = useStoreWorkspace();
   const requiredKeys = Array.isArray(featureKey) ? featureKey : [featureKey];
+  const canAccessWorkspace = isSubscriptionWritable(access);
   const allowed =
-    access.has_service_access &&
+    canAccessWorkspace &&
     requiredKeys.some((key) => hasFeature(access.features, key));
 
   if (!allowed) {
-    const reasonText = !access.has_service_access
+    const reasonText = !canAccessWorkspace
       ? 'A assinatura ou ciclo de vida do estabelecimento está restrito no momento. Consulte a situação do contrato para regularizar o acesso.'
       : description;
 
@@ -42,7 +43,7 @@ export function StoreFeatureGuard({
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold tracking-wide text-amber-700 uppercase">
-                {!access.has_service_access ? 'Acesso suspenso ou pendente' : requiredPlanHint}
+                {!canAccessWorkspace ? 'Acesso suspenso ou pendente' : requiredPlanHint}
               </p>
               <h2 className="mt-1 text-xl font-bold text-slate-900">{title}</h2>
             </div>

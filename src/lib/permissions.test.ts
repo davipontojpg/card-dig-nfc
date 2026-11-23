@@ -4,6 +4,7 @@ import {
   derivePromotionStatus,
   hasAnyPromotionFeature,
   hasFeature,
+  isSubscriptionWritable,
 } from './permissions';
 import { isLocalOrPreviewUrl } from './env';
 
@@ -71,6 +72,26 @@ describe('permissions & promotion helpers', () => {
     expect(isLocalOrPreviewUrl('http://localhost:5173')).toBe(true);
     expect(isLocalOrPreviewUrl('https://preview.pages.dev')).toBe(true);
     expect(isLocalOrPreviewUrl('https://cardapio.minhaempresa.com.br')).toBe(false);
+  });
+
+  it('permite edição do workspace durante implantação (can_edit_workspace) mesmo sem acesso público ativo', () => {
+    expect(
+      isSubscriptionWritable({
+        has_service_access: false,
+        can_edit_workspace: true,
+      } as Parameters<typeof isSubscriptionWritable>[0])
+    ).toBe(true);
+    expect(
+      isSubscriptionWritable({
+        has_service_access: false,
+        can_edit_workspace: false,
+      } as Parameters<typeof isSubscriptionWritable>[0])
+    ).toBe(false);
+    expect(
+      isSubscriptionWritable({
+        has_service_access: true,
+      } as Parameters<typeof isSubscriptionWritable>[0])
+    ).toBe(true);
   });
 });
 
