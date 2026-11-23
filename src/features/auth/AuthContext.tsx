@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
-  const [hadAuthenticatedSession, setHadAuthenticatedSession] = useState(false);
+  const hadAuthenticatedSessionRef = useRef(false);
   const [storedStoreId, setStoredStoreId] = useState<string | null>(() => {
     try {
       return localStorage.getItem(ACTIVE_STORE_STORAGE_KEY);
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => {
         if (!active) return;
         setSession(data.session);
-        if (data.session) setHadAuthenticatedSession(true);
+        if (data.session) hadAuthenticatedSessionRef.current = true;
         setAuthLoading(false);
       })
       .catch(() => {
@@ -64,12 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
       if (nextSession) {
-        setHadAuthenticatedSession(true);
+        hadAuthenticatedSessionRef.current = true;
         setSessionExpired(false);
-      } else {
-        if (event === 'SIGNED_OUT' && hadAuthenticatedSession) {
+      } else if (event === 'SIGNED_OUT') {
+        if (hadAuthenticatedSessionRef.current) {
           setSessionExpired(true);
         }
+        hadAuthenticatedSessionRef.current = false;
         queryClient.clear();
       }
       setAuthLoading(false);
@@ -79,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
       listener.subscription.unsubscribe();
     };
-  }, [hadAuthenticatedSession, queryClient]);
+  }, [queryClient]);
 
   const {
     data: workspaces = null,
@@ -125,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    setHadAuthenticatedSession(false);
+    hadAuthenticatedSessionRef.current = false;
     setSessionExpired(false);
     selectStore(null);
     await authService.signOut();
