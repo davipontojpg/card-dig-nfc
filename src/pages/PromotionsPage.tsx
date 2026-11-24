@@ -43,8 +43,8 @@ export function PromotionsPage() {
     <StoreFeatureGuard
       featureKey={['basic_promotions', 'scheduled_promotions']}
       title="Promoções"
-      requiredPlanHint="Disponível a partir do plano Cardápio + NFC"
-      description="Ative promoções comuns no plano Cardápio + NFC ou crie promoções agendadas por data/hora e recorrentes semanais (ex.: toda segunda, toda terça) no plano Cardápio + NFC + Promoções. Solicite upgrade ao operador para ativar."
+      requiredPlanHint="Incluído em todos os planos (agendamento no plano completo)"
+      description="Ative promoções comuns em qualquer plano ou crie promoções agendadas por data/hora e recorrentes semanais (ex.: toda segunda, toda terça) no plano Cardápio + NFC + Promoções."
     >
       <PromotionsManager />
     </StoreFeatureGuard>

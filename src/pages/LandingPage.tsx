@@ -14,7 +14,7 @@ import { Card } from '../components/ui/Badge';
 const PLANS = [
   {
     name: 'Cardápio Digital',
-    subtitle: 'Essencial para começar com QR Code nas mesas',
+    subtitle: 'Essencial para começar com QR Code e promoções comuns',
     price: 'R$ 19,90',
     period: '/mês',
     setupFeeOriginal: 'R$ 200,00',
@@ -22,22 +22,22 @@ const PLANS = [
     setupFeeDiscount: '-50%',
     features: [
       'Cardápio público responsivo (/m/seu-slug)',
-      'Painel de gestão de categorias, produtos e fotos',
+      'Painel de gestão de categorias, produtos, variantes e fotos',
+      'Promoções comuns (ative e pause ofertas a qualquer momento)',
       'Grupos de adicionais orientativos',
-      'Gerador de QR Code para mesas (PNG e SVG)',
+      'Gerador de QR Code para mesas (modelo personalizado, PNG e SVG)',
     ],
   },
   {
     name: 'Cardápio + NFC',
-    subtitle: 'Acesso por aproximação nas mesas + promoções comuns',
+    subtitle: 'Acesso por aproximação nas mesas com etiquetas NFC',
     price: 'R$ 49,90',
     period: '/mês',
     setupFeeOriginal: 'R$ 250,00',
     setupFeePromo: 'R$ 150,00',
     setupFeeDiscount: '-40%',
     features: [
-      'Tudo do plano Cardápio Digital',
-      'Promoções comuns (ative e pause ofertas a qualquer momento)',
+      'Tudo do plano Cardápio Digital (inclui promoções comuns)',
       'Módulo e guia técnico para etiquetas NFC',
       'URL estável pronta para gravação NTAG213',
       'Suporte à implantação (mídia física orçada à parte)',

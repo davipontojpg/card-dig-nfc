@@ -299,7 +299,7 @@ export function StoreDashboardPage() {
                 ? 'Promoções Agendadas'
                 : hasPromotions
                   ? 'Promoções Comuns'
-                  : 'Promoções (Plano 2+)'}
+                  : 'Promoções'}
             </Badge>
           </div>
         </Card>
@@ -351,7 +351,7 @@ export function StoreDashboardPage() {
                 ? 'Crie promoções comuns ou programe descontos pontuais e semanais recorrentes.'
                 : hasPromotions
                   ? 'Crie promoções comuns ativas no cardápio. Agendamentos semanais no plano superior.'
-                  : 'Disponível a partir do plano Cardápio + NFC.'}
+                  : 'Disponível para planos ativos.'}
             </p>
           </Card>
         </Link>

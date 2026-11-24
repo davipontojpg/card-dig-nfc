@@ -4,7 +4,7 @@
 
 | Código (`code`) | Nome comercial | Mensalidade | Taxa de implantação | Recursos (`feature_key`) |
 |---|---|---:|---:|---|
-| `menu` | Cardápio Digital | **R$ 19,90/mês** | **R$ 100,00** | `digital_menu`, `qr_code` |
+| `menu` | Cardápio Digital | **R$ 19,90/mês** | **R$ 100,00** | `digital_menu`, `qr_code`, `basic_promotions` |
 | `menu_nfc` | Cardápio + NFC | **R$ 49,90/mês** | **R$ 150,00** | `digital_menu`, `qr_code`, `nfc_access`, `basic_promotions` |
 | `menu_nfc_promotions` | Cardápio + NFC + Promoções | **R$ 59,90/mês** | **R$ 100,00** | `digital_menu`, `qr_code`, `nfc_access`, `basic_promotions`, `scheduled_promotions` |
 
