@@ -19,7 +19,7 @@ import { useStoreWorkspace } from '../../app/route-guards/StoreMemberGuard';
 import {
   getLifecycleStatusMeta,
   getSubscriptionStatusMeta,
-  hasAnyPromotionFeature,
+  hasFeature,
   isSubscriptionWritable,
 } from '../../lib/permissions';
 import { formatDateTimeInTz } from '../../lib/formatters';
@@ -32,7 +32,7 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
   const { store, subscription, features, has_service_access, role } = access;
   const membershipsCount = workspaces?.memberships.length ?? 0;
 
-  const hasPromotions = hasAnyPromotionFeature(features);
+  const hasAdvancedPromotions = hasFeature(features, 'scheduled_promotions');
   const canEdit = isSubscriptionWritable(access);
   const subMeta = getSubscriptionStatusMeta(subscription.status);
   const lifecycleMeta = getLifecycleStatusMeta(store.lifecycle_status);
@@ -50,7 +50,7 @@ export function StoreAdminLayout({ children }: { children: ReactNode }) {
       label: 'Promoções',
       icon: Percent,
       end: false,
-      locked: !hasPromotions,
+      locked: !hasAdvancedPromotions,
     },
     { to: '/app/aparencia', label: 'Aparência', icon: Palette, end: false, locked: false },
     { to: '/app/acesso', label: 'QR & NFC', icon: QrCode, end: false, locked: false },

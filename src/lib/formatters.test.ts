@@ -8,6 +8,8 @@ import {
   isValidSlug,
   localDateTimeInputToUtcIso,
   normalizeSlug,
+  parseDecimalInput,
+  sanitizeDecimalInput,
   utcIsoToLocalDateTimeInput,
 } from './formatters';
 
@@ -44,6 +46,14 @@ describe('formatters', () => {
     expect(formatWeekdaysSummary([3, 1, 1])).toBe('Seg, Qua');
     expect(getAccessibleTextColor('#0f172a')).toBe('#ffffff');
     expect(getAccessibleTextColor('#f8fafc')).toBe('#0f172a');
+  });
+
+  it('sanitiza e converte entrada numérica livre sem aceitar texto', () => {
+    expect(sanitizeDecimalInput('abc19,90xyz')).toBe('19,90');
+    expect(sanitizeDecimalInput('24.999')).toBe('24,99');
+    expect(parseDecimalInput('19,90')).toBe(19.9);
+    expect(parseDecimalInput('150')).toBe(150);
+    expect(parseDecimalInput('')).toBeNull();
   });
 });
 

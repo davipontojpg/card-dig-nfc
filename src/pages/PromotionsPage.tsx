@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Edit3, Lock, Pause, Play, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Edit3, Package, Pause, Play, Plus, Trash2 } from 'lucide-react';
 import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
 import { StoreFeatureGuard } from '../app/route-guards/StoreFeatureGuard';
 import { promotionsService, type SavePromotionInput } from '../services/promotions.service';
@@ -16,9 +16,12 @@ import {
   formatBRL,
   formatDateInTz,
   formatDateTimeInTz,
+  formatDecimalForInput,
   formatTimeShort,
   formatWeekdaysSummary,
   localDateTimeInputToUtcIso,
+  parseDecimalInput,
+  sanitizeDecimalInput,
   utcIsoToLocalDateTimeInput,
 } from '../lib/formatters';
 import {
@@ -32,19 +35,21 @@ import type { PromotionDiscountType, PromotionScheduleType } from '../types/data
 import type { PromotionWithProducts } from '../types/domain';
 import { Badge, Card } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { DecimalInput } from '../components/ui/DecimalInput';
 import { Input, Textarea } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { ConfirmDialog, Modal } from '../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingSpinner } from '../components/ui/Feedback';
 import { useToast } from '../components/ui/Toast';
+import { BundlePromotionsTab } from '../components/store-admin/BundlePromotionsTab';
 
 export function PromotionsPage() {
   return (
     <StoreFeatureGuard
-      featureKey={['basic_promotions', 'scheduled_promotions']}
-      title="Promoções"
-      requiredPlanHint="Incluído em todos os planos (agendamento no plano completo)"
-      description="Ative promoções comuns em qualquer plano ou crie promoções agendadas por data/hora e recorrentes semanais (ex.: toda segunda, toda terça) no plano Cardápio + NFC + Promoções."
+      featureKey="scheduled_promotions"
+      title="Promoções Agendadas, Semanais e em Lote"
+      requiredPlanHint="Exclusivo do plano Cardápio + NFC + Promoções"
+      description="Promoções comuns (preço promocional direto no item) agora são configuradas direto em cada produto na aba Produtos. A aba Promoções é reservada para promoções em lote (combos), agendadas por data/hora e recorrentes semanais do plano completo."
     >
       <PromotionsManager />
     </StoreFeatureGuard>
@@ -60,9 +65,12 @@ function PromotionsManager() {
   const writable = isSubscriptionWritable(access);
   const hasScheduledPromotions = hasFeature(access.features, 'scheduled_promotions');
 
+  const [activeTab, setActiveTab] = useState<'bundles' | 'scheduled'>('bundles');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<PromotionWithProducts | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PromotionWithProducts | null>(null);
+  const [discountValueText, setDiscountValueText] = useState('10');
+  const [overrideTextMap, setOverrideTextMap] = useState<Record<string, string>>({});
 
   const { data: promotions = [], isLoading, error, refetch } = useQuery({
     queryKey: ['promotions', storeId],
@@ -211,10 +219,12 @@ function PromotionsManager() {
 
   function openCreate() {
     setEditing(null);
+    setDiscountValueText('10');
+    setOverrideTextMap({});
     form.reset({
       name: '',
       description: '',
-      schedule_type: 'always',
+      schedule_type: 'weekly',
       discount_type: 'percent_off',
       discount_value: 10,
       starts_at_local: '',
@@ -233,6 +243,14 @@ function PromotionsManager() {
 
   function openEdit(promo: PromotionWithProducts) {
     setEditing(promo);
+    setDiscountValueText(formatDecimalForInput(promo.discount_value));
+    const nextOverrides: Record<string, string> = {};
+    for (const pp of promo.promotion_products) {
+      if (pp.discount_value_override !== null && pp.discount_value_override !== undefined) {
+        nextOverrides[pp.product_id] = formatDecimalForInput(pp.discount_value_override);
+      }
+    }
+    setOverrideTextMap(nextOverrides);
     form.reset({
       name: promo.name,
       description: promo.description ?? '',
@@ -275,14 +293,17 @@ function PromotionsManager() {
   function updateProductOverride(
     productId: string,
     type: PromotionDiscountType | '',
-    value: string
+    rawValue: string
   ) {
+    const sanitized = sanitizeDecimalInput(rawValue);
+    setOverrideTextMap((prev) => ({ ...prev, [productId]: sanitized }));
+    const parsed = parseDecimalInput(sanitized);
     const next = watchedProducts.map((p) =>
       p.product_id === productId
         ? {
             ...p,
             discount_type_override: type ? type : null,
-            discount_value_override: type && value ? Number(value) : null,
+            discount_value_override: type && parsed !== null ? parsed : null,
           }
         : p
     );
@@ -307,29 +328,54 @@ function PromotionsManager() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {hasScheduledPromotions ? 'Promoções e Agendamentos' : 'Promoções'}
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Promoções Avançadas</h1>
           <p className="text-sm text-slate-600">
-            {hasScheduledPromotions ? (
-              <>
-                Crie promoções comuns ou agendadas (pontuais e semanais recorrentes) avaliadas no
-                fuso <strong>{timezone}</strong> sem alterar o preço-base dos produtos.
-              </>
-            ) : (
-              <>
-                Crie promoções comuns ativas no cardápio sem alterar o preço-base dos produtos.
-                Agendamentos por data/hora e recorrência semanal estão disponíveis no plano{' '}
-                <strong>Cardápio + NFC + Promoções</strong>.
-              </>
-            )}
+            Crie promoções em lote (combos) ou campanhas agendadas e semanais avaliadas no fuso{' '}
+            <strong>{timezone}</strong>. Promoções comuns ficam direto em cada produto.
           </p>
         </div>
-        <Button onClick={openCreate} disabled={!writable || products.length === 0}>
-          <Plus className="h-4 w-4" />
-          Nova promoção
-        </Button>
+        {activeTab === 'scheduled' ? (
+          <Button onClick={openCreate} disabled={!writable || products.length === 0}>
+            <Plus className="h-4 w-4" />
+            Nova promoção agendada
+          </Button>
+        ) : null}
       </div>
+
+      {/* Abas: Em Lote (Combos) vs Agendadas e Semanais */}
+      <div className="flex gap-1.5 overflow-x-auto border-b border-slate-200 pb-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('bundles')}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-2 text-sm font-semibold transition-colors ${
+            activeTab === 'bundles'
+              ? 'bg-zinc-950 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Package className="h-4 w-4" />
+          Em Lote (Combos)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('scheduled')}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-t-xl px-4 py-2 text-sm font-semibold transition-colors ${
+            activeTab === 'scheduled'
+              ? 'bg-zinc-950 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <CalendarClock className="h-4 w-4" />
+          Agendadas e Semanais ({promotions.length})
+        </button>
+      </div>
+
+      {activeTab === 'bundles' ? (
+        <BundlePromotionsTab storeId={storeId} products={products} writable={writable} />
+      ) : null}
+
+      {activeTab === 'scheduled' ? (
+        <>
 
       {/* Alertas de conflito */}
       {conflictReport && conflictReport.conflicts.length > 0 ? (
@@ -534,43 +580,27 @@ function PromotionsManager() {
           {/* Regra de vigência / agendamento */}
           <div className="space-y-4 rounded-xl border border-slate-200 p-4">
             <Select
-              label="Tipo de promoção"
+              label="Tipo de agendamento"
               {...form.register('schedule_type')}
-              options={
-                hasScheduledPromotions
+              options={[
+                ...(editing?.schedule_type === 'always'
                   ? [
                       {
                         value: 'always',
-                        label: 'Promoção comum (ativa enquanto ligada, sem agendamento)',
-                      },
-                      {
-                        value: 'weekly',
-                        label: 'Agendada semanal recorrente (ex.: toda segunda, toda terça)',
-                      },
-                      {
-                        value: 'once',
-                        label: 'Agendada pontual (data/hora início e término)',
+                        label: 'Promoção comum (legado)',
                       },
                     ]
-                  : [
-                      {
-                        value: 'always',
-                        label: 'Promoção comum (ativa enquanto ligada, sem agendamento)',
-                      },
-                    ]
-              }
+                  : []),
+                {
+                  value: 'weekly',
+                  label: 'Agendada semanal recorrente (ex.: toda segunda, toda terça)',
+                },
+                {
+                  value: 'once',
+                  label: 'Agendada pontual (data/hora início e término)',
+                },
+              ]}
             />
-
-            {!hasScheduledPromotions ? (
-              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900">
-                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-                <p>
-                  <strong>Promoções agendadas</strong> (por data/hora ou recorrentes por dia da
-                  semana, como toda segunda ou toda terça) são exclusivas do plano{' '}
-                  <strong>Cardápio + NFC + Promoções</strong>.
-                </p>
-              </div>
-            ) : null}
 
             {watchedScheduleType === 'always' ? (
               <p className="text-xs text-slate-600">
@@ -666,7 +696,7 @@ function PromotionsManager() {
                 { value: 'fixed_price', label: 'Preço promocional fixo (R$)' },
               ]}
             />
-            <Input
+            <DecimalInput
               label={
                 watchedDiscountType === 'percent_off'
                   ? 'Percentual de desconto (%)'
@@ -674,10 +704,14 @@ function PromotionsManager() {
                     ? 'Valor do desconto (R$)'
                     : 'Preço final promocional (R$)'
               }
-              type="number"
-              step="0.01"
-              min="0.01"
-              {...form.register('discount_value')}
+              required
+              value={discountValueText}
+              onChange={(val) => {
+                setDiscountValueText(val);
+                const parsed = parseDecimalInput(val);
+                form.setValue('discount_value', parsed ?? 0, { shouldValidate: true });
+              }}
+              placeholder={watchedDiscountType === 'percent_off' ? 'Ex.: 15' : 'Ex.: 19,90'}
               error={form.formState.errors.discount_value?.message}
             />
           </div>
@@ -761,15 +795,16 @@ function PromotionsManager() {
                         </select>
                         {selection?.discount_type_override ? (
                           <input
-                            type="number"
-                            step="0.01"
-                            min="0.01"
-                            placeholder="Valor personalizado"
+                            type="text"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            placeholder="Ex.: 19,90"
                             value={
-                              selection.discount_value_override !== null &&
+                              overrideTextMap[prod.id] ??
+                              (selection.discount_value_override !== null &&
                               selection.discount_value_override !== undefined
-                                ? String(selection.discount_value_override)
-                                : ''
+                                ? formatDecimalForInput(selection.discount_value_override)
+                                : '')
                             }
                             onChange={(e) =>
                               updateProductOverride(
@@ -820,6 +855,8 @@ function PromotionsManager() {
         confirmLabel="Excluir"
         isLoading={deleteMutation.isPending}
       />
+        </>
+      ) : null}
     </div>
   );
 }

@@ -11,7 +11,9 @@ import {
   ListPlus,
   Plus,
   Search,
+  Sparkles,
   Star,
+  Tag,
   Trash2,
 } from 'lucide-react';
 import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
@@ -22,7 +24,7 @@ import { variantsService } from '../services/variants.service';
 import { storageService } from '../services/storage.service';
 import { productSchema, type ProductFormValues } from '../lib/validators/product.schema';
 import { formatBRL } from '../lib/formatters';
-import { isSubscriptionWritable } from '../lib/permissions';
+import { hasAnyPromotionFeature, isSubscriptionWritable } from '../lib/permissions';
 import type { ProductRow, ProductVariantRow, PublicMenuProduct } from '../types/domain';
 import { Badge, Card } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -33,6 +35,7 @@ import { EmptyState, ErrorState, LoadingSpinner } from '../components/ui/Feedbac
 import { useToast } from '../components/ui/Toast';
 import { ProductOptionsManager } from '../components/store-admin/ProductOptionsManager';
 import { ProductVariantsManager } from '../components/store-admin/ProductVariantsManager';
+import { ProductPromotionModal } from '../components/store-admin/ProductPromotionModal';
 import { PublicProductModal } from '../components/menu/PublicProductModal';
 
 export function ProductsPage() {
@@ -41,6 +44,7 @@ export function ProductsPage() {
   const { access } = useStoreWorkspace();
   const storeId = access.store.id;
   const writable = isSubscriptionWritable(access);
+  const hasBasicPromotions = hasAnyPromotionFeature(access.features);
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -54,6 +58,7 @@ export function ProductsPage() {
 
   const [optionsProduct, setOptionsProduct] = useState<ProductRow | null>(null);
   const [variantsProductId, setVariantsProductId] = useState<string | null>(null);
+  const [promoProductId, setPromoProductId] = useState<string | null>(null);
   const [previewProduct, setPreviewProduct] = useState<PublicMenuProduct | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductRow | null>(null);
 
@@ -109,6 +114,11 @@ export function ProductsPage() {
   const variantsProduct = useMemo(
     () => (variantsProductId ? (products.find((p) => p.id === variantsProductId) ?? null) : null),
     [products, variantsProductId]
+  );
+
+  const promoProduct = useMemo(
+    () => (promoProductId ? (products.find((p) => p.id === promoProductId) ?? null) : null),
+    [products, promoProductId]
   );
 
   const filtered = useMemo(() => {
@@ -283,7 +293,19 @@ export function ProductsPage() {
         is_available: v.is_available,
         sort_order: v.sort_order,
       })),
-      promotion: null,
+      promotion:
+        product.promo_price !== null && product.promo_price > 0 && product.promo_price < product.price
+          ? {
+              promotion_id: `direct-${product.id}`,
+              name: 'Promoção',
+              description: null,
+              discount_type: 'fixed_price',
+              discount_value: product.promo_price,
+              original_price: product.price,
+              promotional_price: product.promo_price,
+              schedule_type: 'always',
+            }
+          : null,
       option_groups: groups
         .filter((g) => g.is_active)
         .map((g) => ({
@@ -439,9 +461,25 @@ export function ProductsPage() {
                               <Badge tone="success">Disponível</Badge>
                             )}
                           </div>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {categoryNameMap.get(product.category_id) ?? 'Categoria'} •{' '}
-                            <strong className="text-slate-900">{formatBRL(product.price)}</strong>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                            <span>{categoryNameMap.get(product.category_id) ?? 'Categoria'}</span>
+                            <span>•</span>
+                            {product.promo_price !== null && product.promo_price < product.price ? (
+                              <>
+                                <span className="line-through">{formatBRL(product.price)}</span>
+                                <strong className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-900">
+                                  {formatBRL(product.promo_price)}
+                                </strong>
+                                {product.promo_highlight_top ? (
+                                  <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">
+                                    <Sparkles className="h-2.5 w-2.5" />
+                                    Topo
+                                  </span>
+                                ) : null}
+                              </>
+                            ) : (
+                              <strong className="text-slate-900">{formatBRL(product.price)}</strong>
+                            )}
                           </p>
                           {product.description ? (
                             <p className="mt-1 line-clamp-1 text-xs text-slate-600">
@@ -484,6 +522,17 @@ export function ProductsPage() {
                         >
                           {product.is_available ? 'Marcar indisponível' : 'Marcar disponível'}
                         </Button>
+                        {hasBasicPromotions ? (
+                          <Button
+                            variant={product.promo_price !== null ? 'secondary' : 'outline'}
+                            size="sm"
+                            disabled={!writable}
+                            onClick={() => setPromoProductId(product.id)}
+                          >
+                            <Tag className="h-3.5 w-3.5" />
+                            {product.promo_price !== null ? 'Editar promoção' : 'Promoção'}
+                          </Button>
+                        ) : null}
                         <Button
                           variant="outline"
                           size="sm"
@@ -669,6 +718,16 @@ export function ProductsPage() {
           </div>
         </form>
       </Modal>
+
+      {promoProduct ? (
+        <ProductPromotionModal
+          open={Boolean(promoProduct)}
+          onClose={() => setPromoProductId(null)}
+          storeId={storeId}
+          product={promoProduct}
+          disabled={!writable}
+        />
+      ) : null}
 
       {variantsProduct ? (
         <ProductVariantsManager

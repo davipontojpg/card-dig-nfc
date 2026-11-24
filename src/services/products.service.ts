@@ -10,7 +10,11 @@ export const productsService = {
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
     if (error) throw error;
-    return data.map((p) => ({ ...p, price: Number(p.price) }));
+    return data.map((p) => ({
+      ...p,
+      price: Number(p.price),
+      promo_price: p.promo_price !== null ? Number(p.promo_price) : null,
+    }));
   },
 
   async create(
@@ -37,7 +41,11 @@ export const productsService = {
       .select('*')
       .single();
     if (error) throw error;
-    return { ...data, price: Number(data.price) };
+    return {
+      ...data,
+      price: Number(data.price),
+      promo_price: data.promo_price !== null ? Number(data.promo_price) : null,
+    };
   },
 
   async update(
@@ -55,6 +63,9 @@ export const productsService = {
         | 'is_available'
         | 'is_featured'
         | 'sort_order'
+        | 'variant_label'
+        | 'promo_price'
+        | 'promo_highlight_top'
       >
     >
   ): Promise<ProductRow> {
@@ -66,7 +77,11 @@ export const productsService = {
       .select('*')
       .single();
     if (error) throw error;
-    return { ...data, price: Number(data.price) };
+    return {
+      ...data,
+      price: Number(data.price),
+      promo_price: data.promo_price !== null ? Number(data.promo_price) : null,
+    };
   },
 
   async remove(productId: string, storeId: string): Promise<void> {

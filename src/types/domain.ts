@@ -29,6 +29,8 @@ export type OptionGroupRow = Database['public']['Tables']['option_groups']['Row'
 export type ProductOptionRow = Database['public']['Tables']['product_options']['Row'];
 export type PromotionRow = Database['public']['Tables']['promotions']['Row'];
 export type PromotionProductRow = Database['public']['Tables']['promotion_products']['Row'];
+export type PromotionBundleRow = Database['public']['Tables']['promotion_bundles']['Row'];
+export type PromotionBundleItemRow = Database['public']['Tables']['promotion_bundle_items']['Row'];
 
 export interface WorkspaceMembership {
   store_id: string;
@@ -172,6 +174,32 @@ export interface PublicMenuCategory {
   products: PublicMenuProduct[];
 }
 
+export interface PublicHighlightedProduct {
+  product_id: string;
+  name: string;
+  original_price: number;
+  promotional_price: number;
+  image_path: string | null;
+}
+
+export interface PublicMenuBundleItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  image_path: string | null;
+}
+
+export interface PublicMenuBundle {
+  id: string;
+  name: string;
+  description: string | null;
+  regular_total: number;
+  promo_price: number;
+  highlight_top: boolean;
+  items: PublicMenuBundleItem[];
+}
+
 export interface PublicMenuResponse {
   status: 'ok' | 'not_found' | 'unpublished' | 'unavailable';
   is_preview?: boolean;
@@ -205,6 +233,16 @@ export interface PublicMenuResponse {
     ends_at: string | null;
     end_time: string | null;
   }>;
+  highlighted_products?: PublicHighlightedProduct[];
+  bundles?: PublicMenuBundle[];
+}
+
+export interface PromotionBundleWithItems extends PromotionBundleRow {
+  items: Array<
+    PromotionBundleItemRow & {
+      product?: Pick<ProductRow, 'id' | 'name' | 'price' | 'is_active' | 'is_available' | 'image_path'>;
+    }
+  >;
 }
 
 export interface PromotionWithProducts extends PromotionRow {

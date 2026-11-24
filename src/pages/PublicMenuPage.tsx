@@ -6,6 +6,7 @@ import {
   Clock,
   Eye,
   MapPin,
+  Package,
   Phone,
   Search,
   Sparkles,
@@ -129,11 +130,27 @@ export function PublicMenuPage() {
     );
   }
 
-  const { store, features, categories = [], active_promotions = [] } = data;
+  const {
+    store,
+    features,
+    categories = [],
+    active_promotions = [],
+    highlighted_products = [],
+    bundles = [],
+  } = data;
   const accentColor = store.primary_color || '#0f766e';
   const contrastText = getAccessibleTextColor(accentColor);
   const logoUrl = storageService.getPublicUrl(store.logo_path);
   const promotionsEnabled = Boolean(features?.basic_promotions || features?.scheduled_promotions);
+  const highlightedBundles = bundles.filter((b) => b.highlight_top);
+  const allProductsById = new Map(
+    categories.flatMap((cat) => cat.products.map((p) => [p.id, p] as const))
+  );
+  const hasTopHighlights =
+    promotionsEnabled &&
+    (active_promotions.length > 0 ||
+      highlighted_products.length > 0 ||
+      highlightedBundles.length > 0);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -233,35 +250,173 @@ export function PublicMenuPage() {
       ) : null}
 
       <main className="mx-auto max-w-3xl space-y-8 px-4 py-6">
-        {/* Destaque de ofertas vigentes (apenas com scheduled_promotions ativo) */}
-        {promotionsEnabled && active_promotions.length > 0 ? (
+        {/* Destaque de ofertas vigentes no topo */}
+        {hasTopHighlights ? (
           <section
             aria-label="Ofertas vigentes"
-            className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"
+            className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"
           >
             <div className="flex items-center gap-2 text-emerald-900">
               <Tag className="h-4 w-4 text-emerald-700" />
               <h2 className="text-sm font-bold tracking-wide uppercase">Ofertas vigentes agora</h2>
             </div>
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              {active_promotions.map((promo) => (
+
+            {highlighted_products.length > 0 ? (
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {highlighted_products.map((hp) => {
+                  const fullProd = allProductsById.get(hp.product_id);
+                  const hpThumb = storageService.getPublicUrl(hp.image_path);
+                  return (
+                    <button
+                      key={hp.product_id}
+                      type="button"
+                      onClick={() => {
+                        if (fullProd) setSelectedProduct(fullProd);
+                      }}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-white p-3 text-left transition-shadow hover:shadow-xs"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-slate-900">{hp.name}</p>
+                        <div className="mt-1 flex flex-wrap items-baseline gap-1.5">
+                          <span className="text-xs text-slate-400 line-through">
+                            {formatBRL(hp.original_price)}
+                          </span>
+                          <span
+                            className="rounded-md px-2 py-0.5 text-sm font-extrabold"
+                            style={{ backgroundColor: accentColor, color: contrastText }}
+                          >
+                            {formatBRL(hp.promotional_price)}
+                          </span>
+                        </div>
+                      </div>
+                      {hpThumb ? (
+                        <img
+                          src={hpThumb}
+                          alt={hp.name}
+                          className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                        />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {highlightedBundles.length > 0 ? (
+              <div className="grid gap-2.5">
+                {highlightedBundles.map((bundle) => (
+                  <div
+                    key={bundle.id}
+                    className="rounded-xl border border-emerald-300 bg-white p-3.5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <Package className="h-4 w-4 text-emerald-700" />
+                          <p className="text-sm font-bold text-slate-900">{bundle.name}</p>
+                        </div>
+                        {bundle.description ? (
+                          <p className="mt-0.5 text-xs text-slate-600">{bundle.description}</p>
+                        ) : null}
+                      </div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xs text-slate-400 line-through">
+                          {formatBRL(bundle.regular_total)}
+                        </span>
+                        <span
+                          className="rounded-lg px-2.5 py-0.5 text-sm font-extrabold"
+                          style={{ backgroundColor: accentColor, color: contrastText }}
+                        >
+                          {formatBRL(bundle.promo_price)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {bundle.items.map((item) => (
+                        <span
+                          key={item.product_id}
+                          className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700"
+                        >
+                          {item.quantity}x {item.product_name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {active_promotions.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {active_promotions.map((promo) => (
+                  <div
+                    key={promo.promotion_id}
+                    className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs text-slate-800"
+                  >
+                    <p className="font-bold text-emerald-800">{promo.name}</p>
+                    {promo.description ? (
+                      <p className="text-slate-600">{promo.description}</p>
+                    ) : null}
+                    {promo.schedule_type === 'once' && promo.ends_at ? (
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Válida até {formatDateTimeInTz(promo.ends_at, store.timezone)}
+                      </p>
+                    ) : promo.end_time ? (
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Hoje até {formatTimeShort(promo.end_time)}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {/* Combos e Promoções em Lote */}
+        {bundles.length > 0 && !search.trim() ? (
+          <section aria-label="Combos e promoções em lote" className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-slate-900" />
+              <h2 className="text-xl font-bold text-slate-900">Combos e Promoções em Lote</h2>
+            </div>
+            <div className="grid gap-3">
+              {bundles.map((bundle) => (
                 <div
-                  key={promo.promotion_id}
-                  className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs text-slate-800"
+                  key={bundle.id}
+                  className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-2xs"
                 >
-                  <p className="font-bold text-emerald-800">{promo.name}</p>
-                  {promo.description ? (
-                    <p className="text-slate-600">{promo.description}</p>
-                  ) : null}
-                  {promo.schedule_type === 'once' && promo.ends_at ? (
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      Válida até {formatDateTimeInTz(promo.ends_at, store.timezone)}
-                    </p>
-                  ) : promo.end_time ? (
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      Hoje até {formatTimeShort(promo.end_time)}
-                    </p>
-                  ) : null}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">{bundle.name}</h3>
+                      {bundle.description ? (
+                        <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">
+                          {bundle.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-slate-400 line-through">
+                        {formatBRL(bundle.regular_total)}
+                      </span>
+                      <span
+                        className="rounded-lg px-2.5 py-0.5 text-base font-extrabold"
+                        style={{ backgroundColor: accentColor, color: contrastText }}
+                      >
+                        {formatBRL(bundle.promo_price)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {bundle.items.map((item) => (
+                      <span
+                        key={item.product_id}
+                        className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                      >
+                        {item.quantity}x {item.product_name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

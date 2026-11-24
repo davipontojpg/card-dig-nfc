@@ -57,6 +57,37 @@ export function formatBRL(value: number | string | null | undefined): string {
   return brlFormatter.format(num);
 }
 
+/**
+ * Sanitiza entrada numérica livre (somente dígitos e no máximo 1 separador decimal com até 2 casas).
+ * Evita setas de incremento/decremento de input[type=number] e impede digitação de letras/texto.
+ */
+export function sanitizeDecimalInput(raw: string): string {
+  const cleaned = raw.replace(/[^\d.,]/g, '').replace(/\./g, ',');
+  const firstComma = cleaned.indexOf(',');
+  if (firstComma === -1) return cleaned;
+  const intPart = cleaned.slice(0, firstComma);
+  const decPart = cleaned.slice(firstComma + 1).replace(/,/g, '').slice(0, 2);
+  return `${intPart},${decPart}`;
+}
+
+export function parseDecimalInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.replace(/\./g, '').replace(',', '.');
+  // Caso o usuário tenha colado com ponto decimal (ex.: 19.90)
+  const fallbackNormalized = trimmed.includes(',')
+    ? normalized
+    : trimmed.replace(',', '.');
+  const num = Number(fallbackNormalized);
+  if (!Number.isFinite(num)) return null;
+  return Math.round(num * 100) / 100;
+}
+
+export function formatDecimalForInput(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '';
+  return value.toFixed(2).replace('.', ',');
+}
+
 export function formatDateTimeInTz(
   iso: string | null | undefined,
   timezone: string = DEFAULT_TIMEZONE

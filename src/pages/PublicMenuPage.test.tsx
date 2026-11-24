@@ -344,4 +344,77 @@ describe('PublicMenuPage', () => {
     await user.click(mangaBtn);
     expect(mangaBtn).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('exibe destaques de promoção direta no topo e combos em lote com soma riscada', async () => {
+    vi.spyOn(publicMenuService, 'getBySlug').mockResolvedValue({
+      status: 'ok',
+      evaluated_at: '2026-11-24T22:00:00Z',
+      store: {
+        id: 'store-5',
+        name: 'Burger Prime',
+        slug: 'burger-prime',
+        business_type: 'Hamburgueria',
+        description: null,
+        logo_path: null,
+        primary_color: '#0f766e',
+        public_phone: null,
+        public_address: null,
+        timezone: 'America/Sao_Paulo',
+      },
+      features: {
+        digital_menu: true,
+        qr_code: true,
+        basic_promotions: true,
+        scheduled_promotions: true,
+      },
+      active_promotions: [],
+      highlighted_products: [
+        {
+          product_id: 'prod-smash',
+          name: 'Smash Duplo',
+          original_price: 32,
+          promotional_price: 24.9,
+          image_path: null,
+        },
+      ],
+      bundles: [
+        {
+          id: 'bundle-1',
+          name: 'Combo Sextou',
+          description: 'Para dividir',
+          regular_total: 84,
+          promo_price: 69.9,
+          highlight_top: true,
+          items: [
+            {
+              product_id: 'prod-smash',
+              product_name: 'Smash Duplo',
+              quantity: 2,
+              unit_price: 32,
+              image_path: null,
+            },
+            {
+              product_id: 'prod-batata',
+              product_name: 'Batata Grande',
+              quantity: 1,
+              unit_price: 20,
+              image_path: null,
+            },
+          ],
+        },
+      ],
+      categories: [],
+    });
+
+    renderPublicMenu('burger-prime');
+
+    await waitFor(() => {
+      expect(screen.getByText('Ofertas vigentes agora')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Smash Duplo')).toBeInTheDocument();
+    expect(screen.getAllByText('Combo Sextou').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('2x Smash Duplo').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/R\$\s?69,90/).length).toBeGreaterThanOrEqual(1);
+  });
 });

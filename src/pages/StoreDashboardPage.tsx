@@ -341,17 +341,15 @@ export function StoreDashboardPage() {
           <Card className="h-full p-5 transition-shadow hover:shadow-md">
             <div className="flex items-center justify-between">
               <Percent className="h-6 w-6 text-zinc-900" />
-              {!hasPromotions ? <Lock className="h-4 w-4 text-slate-400" /> : null}
+              {!hasScheduledPromotions ? <Lock className="h-4 w-4 text-slate-400" /> : null}
             </div>
             <h2 className="mt-3 text-base font-semibold text-slate-900">
-              {hasScheduledPromotions ? 'Promoções e Agendamentos' : 'Promoções'}
+              Promoções em Lote e Agendadas
             </h2>
             <p className="mt-1 text-sm text-slate-600">
               {hasScheduledPromotions
-                ? 'Crie promoções comuns ou programe descontos pontuais e semanais recorrentes.'
-                : hasPromotions
-                  ? 'Crie promoções comuns ativas no cardápio. Agendamentos semanais no plano superior.'
-                  : 'Disponível para planos ativos.'}
+                ? 'Crie combos em lote e promoções agendadas ou semanais. Promoções comuns ficam direto nos produtos.'
+                : 'Promoções comuns ficam direto em cada produto. Combos em lote e agendamentos estão no plano completo.'}
             </p>
           </Card>
         </Link>

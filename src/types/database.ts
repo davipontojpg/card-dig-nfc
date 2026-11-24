@@ -426,6 +426,8 @@ export interface Database {
           is_featured: boolean;
           sort_order: number;
           variant_label: string | null;
+          promo_price: number | null;
+          promo_highlight_top: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -442,6 +444,8 @@ export interface Database {
           is_featured?: boolean;
           sort_order?: number;
           variant_label?: string | null;
+          promo_price?: number | null;
+          promo_highlight_top?: boolean;
         };
         Update: {
           category_id?: string;
@@ -454,6 +458,8 @@ export interface Database {
           is_featured?: boolean;
           sort_order?: number;
           variant_label?: string | null;
+          promo_price?: number | null;
+          promo_highlight_top?: boolean;
         };
         Relationships: [];
       };
@@ -631,6 +637,60 @@ export interface Database {
         Update: {
           discount_type_override?: PromotionDiscountType | null;
           discount_value_override?: number | null;
+        };
+        Relationships: [];
+      };
+      promotion_bundles: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          description: string | null;
+          promo_price: number;
+          highlight_top: boolean;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          name: string;
+          description?: string | null;
+          promo_price: number;
+          highlight_top?: boolean;
+          is_active?: boolean;
+          sort_order?: number;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          promo_price?: number;
+          highlight_top?: boolean;
+          is_active?: boolean;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      promotion_bundle_items: {
+        Row: {
+          id: string;
+          store_id: string;
+          bundle_id: string;
+          product_id: string;
+          quantity: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          bundle_id: string;
+          product_id: string;
+          quantity?: number;
+        };
+        Update: {
+          quantity?: number;
         };
         Relationships: [];
       };
