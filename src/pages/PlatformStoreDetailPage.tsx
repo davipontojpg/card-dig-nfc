@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Circle,
   Copy,
+  Download,
   ExternalLink,
   Eye,
   ImagePlus,
@@ -23,6 +24,7 @@ import { provisioningService } from '../services/provisioning.service';
 import { storageService } from '../services/storage.service';
 import { subscriptionsService } from '../services/subscriptions.service';
 import { buildPublicMenuUrl } from '../lib/env';
+import { generateBrandedQrCardDataUrl } from '../lib/qr-card-generator';
 import {
   COMMON_TIMEZONES,
   formatBRL,
@@ -82,6 +84,7 @@ export function PlatformStoreDetailPage() {
   const [requestChangesModalOpen, setRequestChangesModalOpen] = useState(false);
   const [reviewNotes, setReviewNotes] = useState('');
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [downloadingQrCard, setDownloadingQrCard] = useState(false);
 
   const { data: detail, isLoading, error, refetch } = useQuery({
     queryKey: ['platform-store-detail', storeId],
@@ -342,6 +345,32 @@ export function PlatformStoreDetailPage() {
     e.target.value = '';
     if (!file) return;
     uploadLogoMutation.mutate(file);
+  }
+
+  async function handleDownloadBrandedQrCard() {
+    if (!detail) return;
+    setDownloadingQrCard(true);
+    try {
+      const dataUrl = await generateBrandedQrCardDataUrl({
+        storeName: detail.store.name,
+        slug: detail.store.slug,
+        publicUrl: buildPublicMenuUrl(detail.store.slug),
+        primaryColor: detail.store.primary_color,
+        logoUrl: storageService.getPublicUrl(detail.store.logo_path),
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `placa-cardapio-${detail.store.slug}.png`;
+      link.click();
+      toast.success('Placa QR personalizada gerada!');
+    } catch (err) {
+      toast.error(
+        'Erro ao gerar placa QR',
+        err instanceof Error ? err.message : 'Erro desconhecido'
+      );
+    } finally {
+      setDownloadingQrCard(false);
+    }
   }
 
   const inviteActionMutation = useMutation({
@@ -1255,7 +1284,16 @@ export function PlatformStoreDetailPage() {
               <p className="text-xs font-medium text-slate-500">URL Pública</p>
               <p className="truncate font-mono text-sm text-slate-900">{publicUrl}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                isLoading={downloadingQrCard}
+                onClick={() => void handleDownloadBrandedQrCard()}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Baixar placa QR
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

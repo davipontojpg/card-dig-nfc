@@ -25,6 +25,8 @@ function makeAccess(features: string[], hasServiceAccess = true): StoreAccessCon
       is_published: true,
       lifecycle_status: 'active',
       onboarding_status: 'completed',
+      onboarding_review_notes: null,
+      onboarding_submitted_at: null,
       created_by_platform_admin: null,
       created_at: '2026-11-01T00:00:00Z',
       updated_at: '2026-11-01T00:00:00Z',

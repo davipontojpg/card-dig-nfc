@@ -76,15 +76,10 @@ export function StoreMemberGuard({ children }: { children: ReactNode }) {
             Nenhum estabelecimento associado
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Sua conta ainda não possui vínculo com nenhum estabelecimento. Caso você seja
-            operador do SaaS, acesse o painel da plataforma.
+            Sua conta ainda não possui vínculo com nenhum estabelecimento. Caso tenha recebido um
+            convite recente, aguarde a conclusão da vinculação ou entre em contato com o suporte.
           </p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-            {workspaces?.is_platform_admin ? (
-              <Button onClick={() => (window.location.href = '/platform')}>
-                Acessar Painel Central
-              </Button>
-            ) : null}
             <Button variant="outline" onClick={() => void signOut()}>
               Sair da conta
             </Button>

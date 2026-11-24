@@ -13,7 +13,7 @@ Nunca grave tags físicas ou imprima materiais definitivos enquanto `VITE_PUBLIC
 ## 2. QR Code (Disponível nos 3 Planos)
 
 - Acesse `/app/acesso` no painel do estabelecimento.
-- Faça o download em **PNG** (impressão rápida) ou **SVG** (gráfica/artes vetoriais).
+- Faça o download do **Modelo personalizado (PNG alta resolução)** — gerado automaticamente com a cor principal, logotipo do estabelecimento e chamada para NFC/QR Code — ou do QR Code simples em **PNG** e **SVG** (gráfica/artes vetoriais).
 - No MVP, o mesmo QR Code pode ser utilizado em todas as mesas e balcões, pois o sistema não controla comandas nem métricas individuais por mesa.
 - Mantenha o QR Code visível mesmo em estabelecimentos com NFC, servindo como alternativa imediata para celulares sem suporte NFC ou com leitor desativado.
 

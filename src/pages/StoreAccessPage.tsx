@@ -9,23 +9,41 @@ import {
   Nfc,
   QrCode,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
 import { StoreFeatureGuard } from '../app/route-guards/StoreFeatureGuard';
+import { storageService } from '../services/storage.service';
 import { buildPublicMenuUrl, env, isLocalOrPreviewUrl } from '../lib/env';
+import {
+  DEFAULT_NFC_QR_INSTRUCTION,
+  DEFAULT_QR_ONLY_INSTRUCTION,
+  generateBrandedQrCardDataUrl,
+} from '../lib/qr-card-generator';
 import { Card } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
+
+type QrDownloadMode = 'branded' | 'simple';
+type CardTextPreset = 'nfc_qr' | 'qr_only';
 
 export function StoreAccessPage() {
   const toast = useToast();
   const { access } = useStoreWorkspace();
   const { store } = access;
   const publicUrl = buildPublicMenuUrl(store.slug);
+  const logoUrl = storageService.getPublicUrl(store.logo_path);
   const unstableUrl = isLocalOrPreviewUrl(env.publicAppUrl);
+
+  const [qrMode, setQrMode] = useState<QrDownloadMode>('branded');
+  const [textPreset, setTextPreset] = useState<CardTextPreset>('nfc_qr');
+  const [instructionText, setInstructionText] = useState<string>(DEFAULT_NFC_QR_INSTRUCTION);
 
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [qrSvg, setQrSvg] = useState<string>('');
+  const [brandedCardDataUrl, setBrandedCardDataUrl] = useState<string>('');
+  const [brandedCardLoading, setBrandedCardLoading] = useState<boolean>(false);
 
   useEffect(() => {
     let active = true;
@@ -45,9 +63,46 @@ export function StoreAccessPage() {
     };
   }, [publicUrl]);
 
+  useEffect(() => {
+    let active = true;
+    setBrandedCardLoading(true);
+
+    generateBrandedQrCardDataUrl({
+      storeName: store.name,
+      slug: store.slug,
+      publicUrl,
+      primaryColor: store.primary_color,
+      logoUrl,
+      instructionText,
+      showNfcIcon: textPreset === 'nfc_qr',
+    })
+      .then((dataUrl) => {
+        if (!active) return;
+        setBrandedCardDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (!active) return;
+        setBrandedCardDataUrl('');
+      })
+      .finally(() => {
+        if (active) setBrandedCardLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [store.name, store.slug, store.primary_color, publicUrl, logoUrl, instructionText, textPreset]);
+
   async function copyPublicUrl() {
     await navigator.clipboard.writeText(publicUrl);
     toast.success('URL pública copiada!', publicUrl);
+  }
+
+  function handlePresetChange(nextPreset: CardTextPreset) {
+    setTextPreset(nextPreset);
+    setInstructionText(
+      nextPreset === 'nfc_qr' ? DEFAULT_NFC_QR_INSTRUCTION : DEFAULT_QR_ONLY_INSTRUCTION
+    );
   }
 
   function downloadSvg() {
@@ -111,50 +166,182 @@ export function StoreAccessPage() {
         </div>
       </Card>
 
-      {/* QR Code (todos os planos) */}
-      <Card className="p-5 sm:p-6">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-          <div className="flex shrink-0 flex-col items-center rounded-2xl border border-slate-200 bg-white p-4">
-            {qrDataUrl ? (
-              <img
-                src={qrDataUrl}
-                alt={`QR Code do cardápio de ${store.name}`}
-                className="h-48 w-48"
-              />
-            ) : (
-              <div className="flex h-48 w-48 items-center justify-center text-slate-400">
-                <QrCode className="h-12 w-12" />
-              </div>
-            )}
-            <p className="mt-2 text-xs font-medium text-slate-500">/m/{store.slug}</p>
+      {/* QR Code + Modelo Personalizado (todos os planos) */}
+      <Card className="space-y-5 p-5 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <QrCode className="h-5 w-5 text-zinc-900" />
+            <h2 className="text-lg font-bold text-slate-900">QR Code para Mesas e Balcão</h2>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-zinc-900" />
-              <h2 className="text-lg font-bold text-slate-900">QR Code para Mesas e Balcão</h2>
-            </div>
-            <p className="text-sm text-slate-600">
-              Disponível em todos os planos. O mesmo QR Code pode ser impresso em todas as mesas e
-              suportes do estabelecimento, mantendo o acesso alternativo mesmo para aparelhos sem
-              NFC.
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {qrDataUrl ? (
-                <a href={qrDataUrl} download={`qrcode-${store.slug}.png`}>
-                  <Button variant="outline">
-                    <Download className="h-4 w-4" />
-                    Baixar PNG
-                  </Button>
-                </a>
-              ) : null}
-              <Button variant="outline" onClick={downloadSvg} disabled={!qrSvg}>
-                <Download className="h-4 w-4" />
-                Baixar SVG (gráfica)
-              </Button>
-            </div>
+          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+            <button
+              type="button"
+              onClick={() => setQrMode('branded')}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                qrMode === 'branded'
+                  ? 'bg-zinc-950 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Modelo personalizado
+            </button>
+            <button
+              type="button"
+              onClick={() => setQrMode('simple')}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                qrMode === 'simple'
+                  ? 'bg-zinc-950 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <QrCode className="h-3.5 w-3.5" />
+              QR simples
+            </button>
           </div>
         </div>
+
+        {qrMode === 'branded' ? (
+          <div className="flex flex-col gap-6 md:flex-row md:items-start">
+            {/* Prévia do modelo pronto para impressão */}
+            <div className="flex shrink-0 flex-col items-center">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
+                {brandedCardDataUrl ? (
+                  <img
+                    src={brandedCardDataUrl}
+                    alt={`Modelo personalizado de QR Code de ${store.name}`}
+                    className="h-auto w-56 sm:w-64"
+                  />
+                ) : (
+                  <div className="flex h-80 w-56 items-center justify-center text-xs text-slate-500 sm:w-64">
+                    {brandedCardLoading ? 'Gerando modelo...' : 'Prévia indisponível'}
+                  </div>
+                )}
+              </div>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Alta resolução (1200 × 1680 px) pronta para impressão
+              </p>
+            </div>
+
+            <div className="flex-1 space-y-4">
+              <p className="text-sm text-slate-600">
+                Gerado automaticamente com a <strong>cor principal</strong> ({store.primary_color})
+                e o <strong>logotipo</strong> do seu estabelecimento, pronto para displays de mesa,
+                adesivos ou placas de balcão.
+              </p>
+
+              {/* Escolha rápida do texto */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-700">Modelo de chamada</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePresetChange('nfc_qr')}
+                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      textPreset === 'nfc_qr'
+                        ? 'border-zinc-950 bg-zinc-950 text-white'
+                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    NFC + QR Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePresetChange('qr_only')}
+                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      textPreset === 'qr_only'
+                        ? 'border-zinc-950 bg-zinc-950 text-white'
+                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    Somente QR Code
+                  </button>
+                </div>
+              </div>
+
+              <Input
+                label="Texto exibido acima do QR Code"
+                value={instructionText}
+                maxLength={120}
+                onChange={(e) => setInstructionText(e.target.value)}
+                placeholder={DEFAULT_NFC_QR_INSTRUCTION}
+              />
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {brandedCardDataUrl ? (
+                  <a
+                    href={brandedCardDataUrl}
+                    download={`placa-cardapio-${store.slug}.png`}
+                  >
+                    <Button isLoading={brandedCardLoading}>
+                      <Download className="h-4 w-4" />
+                      Baixar modelo personalizado (PNG)
+                    </Button>
+                  </a>
+                ) : (
+                  <Button disabled isLoading={brandedCardLoading}>
+                    <Download className="h-4 w-4" />
+                    Gerando modelo...
+                  </Button>
+                )}
+
+                {qrDataUrl ? (
+                  <a href={qrDataUrl} download={`qrcode-${store.slug}.png`}>
+                    <Button variant="outline">
+                      <Download className="h-4 w-4" />
+                      QR simples (PNG)
+                    </Button>
+                  </a>
+                ) : null}
+
+                <Button variant="outline" onClick={downloadSvg} disabled={!qrSvg}>
+                  <Download className="h-4 w-4" />
+                  QR simples (SVG)
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            <div className="flex shrink-0 flex-col items-center rounded-2xl border border-slate-200 bg-white p-4">
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt={`QR Code do cardápio de ${store.name}`}
+                  className="h-48 w-48"
+                />
+              ) : (
+                <div className="flex h-48 w-48 items-center justify-center text-slate-400">
+                  <QrCode className="h-12 w-12" />
+                </div>
+              )}
+              <p className="mt-2 text-xs font-medium text-slate-500">/m/{store.slug}</p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600">
+                Disponível em todos os planos. O mesmo QR Code pode ser impresso em todas as mesas e
+                suportes do estabelecimento, mantendo o acesso alternativo mesmo para aparelhos sem
+                NFC.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {qrDataUrl ? (
+                  <a href={qrDataUrl} download={`qrcode-${store.slug}.png`}>
+                    <Button variant="outline">
+                      <Download className="h-4 w-4" />
+                      Baixar PNG
+                    </Button>
+                  </a>
+                ) : null}
+                <Button variant="outline" onClick={downloadSvg} disabled={!qrSvg}>
+                  <Download className="h-4 w-4" />
+                  Baixar SVG (gráfica)
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* NFC (protegido por feature_key = nfc_access) */}
@@ -240,4 +427,3 @@ export function StoreAccessPage() {
     </div>
   );
 }
-
