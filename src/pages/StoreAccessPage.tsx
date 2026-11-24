@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
 import { StoreFeatureGuard } from '../app/route-guards/StoreFeatureGuard';
+import { hasFeature, isSubscriptionWritable } from '../lib/permissions';
 import { storageService } from '../services/storage.service';
 import { buildPublicMenuUrl, env, isLocalOrPreviewUrl } from '../lib/env';
 import {
@@ -32,18 +33,34 @@ export function StoreAccessPage() {
   const toast = useToast();
   const { access } = useStoreWorkspace();
   const { store } = access;
+  const hasNfcAccess =
+    isSubscriptionWritable(access) && hasFeature(access.features, 'nfc_access');
   const publicUrl = buildPublicMenuUrl(store.slug);
   const logoUrl = storageService.getPublicUrl(store.logo_path);
   const unstableUrl = isLocalOrPreviewUrl(env.publicAppUrl);
 
   const [qrMode, setQrMode] = useState<QrDownloadMode>('branded');
-  const [textPreset, setTextPreset] = useState<CardTextPreset>('nfc_qr');
-  const [instructionText, setInstructionText] = useState<string>(DEFAULT_NFC_QR_INSTRUCTION);
+  const [textPreset, setTextPreset] = useState<CardTextPreset>(() =>
+    hasNfcAccess ? 'nfc_qr' : 'qr_only'
+  );
+  const [instructionText, setInstructionText] = useState<string>(() =>
+    hasNfcAccess ? DEFAULT_NFC_QR_INSTRUCTION : DEFAULT_QR_ONLY_INSTRUCTION
+  );
+  const effectiveTextPreset: CardTextPreset = hasNfcAccess ? textPreset : 'qr_only';
 
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [qrSvg, setQrSvg] = useState<string>('');
   const [brandedCardDataUrl, setBrandedCardDataUrl] = useState<string>('');
   const [brandedCardLoading, setBrandedCardLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!hasNfcAccess) {
+      setTextPreset('qr_only');
+      setInstructionText((prev) =>
+        prev === DEFAULT_NFC_QR_INSTRUCTION ? DEFAULT_QR_ONLY_INSTRUCTION : prev
+      );
+    }
+  }, [hasNfcAccess]);
 
   useEffect(() => {
     let active = true;
@@ -74,7 +91,7 @@ export function StoreAccessPage() {
       primaryColor: store.primary_color,
       logoUrl,
       instructionText,
-      showNfcIcon: textPreset === 'nfc_qr',
+      showNfcIcon: effectiveTextPreset === 'nfc_qr',
     })
       .then((dataUrl) => {
         if (!active) return;
@@ -91,7 +108,15 @@ export function StoreAccessPage() {
     return () => {
       active = false;
     };
-  }, [store.name, store.slug, store.primary_color, publicUrl, logoUrl, instructionText, textPreset]);
+  }, [
+    store.name,
+    store.slug,
+    store.primary_color,
+    publicUrl,
+    logoUrl,
+    instructionText,
+    effectiveTextPreset,
+  ]);
 
   async function copyPublicUrl() {
     await navigator.clipboard.writeText(publicUrl);
@@ -119,9 +144,13 @@ export function StoreAccessPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Acesso Público: URL, QR Code e NFC</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {hasNfcAccess ? 'Acesso Público: URL, QR Code e NFC' : 'Acesso Público: URL e QR Code'}
+        </h1>
         <p className="text-sm text-slate-600">
-          Compartilhe seu cardápio por link permanente, QR Code impresso nas mesas ou tags NFC.
+          {hasNfcAccess
+            ? 'Compartilhe seu cardápio por link permanente, QR Code impresso nas mesas ou tags NFC.'
+            : 'Compartilhe seu cardápio por link permanente ou QR Code impresso nas mesas.'}
         </p>
       </div>
 
@@ -135,8 +164,10 @@ export function StoreAccessPage() {
             <p className="font-semibold">Atenção: URL base de desenvolvimento ou preview</p>
             <p className="mt-0.5 text-xs">
               A variável <code>VITE_PUBLIC_APP_URL</code> aponta atualmente para{' '}
-              <code>{env.publicAppUrl}</code>. Configure um domínio estável definitivo antes de
-              imprimir QR Codes em escala ou gravar etiquetas NFC permanentes.
+              <code>{env.publicAppUrl}</code>.{' '}
+              {hasNfcAccess
+                ? 'Configure um domínio estável definitivo antes de imprimir QR Codes em escala ou gravar etiquetas NFC permanentes.'
+                : 'Configure um domínio estável definitivo antes de imprimir QR Codes em escala.'}
             </p>
           </div>
         </div>
@@ -231,41 +262,45 @@ export function StoreAccessPage() {
                 adesivos ou placas de balcão.
               </p>
 
-              {/* Escolha rápida do texto */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-700">Modelo de chamada</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handlePresetChange('nfc_qr')}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      textPreset === 'nfc_qr'
-                        ? 'border-zinc-950 bg-zinc-950 text-white'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    NFC + QR Code
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePresetChange('qr_only')}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      textPreset === 'qr_only'
-                        ? 'border-zinc-950 bg-zinc-950 text-white'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    Somente QR Code
-                  </button>
+              {/* Escolha rápida do texto (somente planos com NFC) */}
+              {hasNfcAccess ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-700">Modelo de chamada</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handlePresetChange('nfc_qr')}
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        effectiveTextPreset === 'nfc_qr'
+                          ? 'border-zinc-950 bg-zinc-950 text-white'
+                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      NFC + QR Code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePresetChange('qr_only')}
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        effectiveTextPreset === 'qr_only'
+                          ? 'border-zinc-950 bg-zinc-950 text-white'
+                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      Somente QR Code
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <Input
                 label="Texto exibido acima do QR Code"
                 value={instructionText}
                 maxLength={120}
                 onChange={(e) => setInstructionText(e.target.value)}
-                placeholder={DEFAULT_NFC_QR_INSTRUCTION}
+                placeholder={
+                  hasNfcAccess ? DEFAULT_NFC_QR_INSTRUCTION : DEFAULT_QR_ONLY_INSTRUCTION
+                }
               />
 
               <div className="flex flex-wrap gap-2 pt-1">
@@ -321,9 +356,9 @@ export function StoreAccessPage() {
 
             <div className="space-y-3">
               <p className="text-sm text-slate-600">
-                Disponível em todos os planos. O mesmo QR Code pode ser impresso em todas as mesas e
-                suportes do estabelecimento, mantendo o acesso alternativo mesmo para aparelhos sem
-                NFC.
+                {hasNfcAccess
+                  ? 'Disponível em todos os planos. O mesmo QR Code pode ser impresso em todas as mesas e suportes do estabelecimento, mantendo o acesso alternativo mesmo para aparelhos sem NFC.'
+                  : 'Disponível em todos os planos. O mesmo QR Code pode ser impresso em todas as mesas e suportes do estabelecimento.'}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 {qrDataUrl ? (

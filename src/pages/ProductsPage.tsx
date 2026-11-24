@@ -7,6 +7,7 @@ import {
   Edit3,
   Eye,
   ImagePlus,
+  Layers,
   ListPlus,
   Plus,
   Search,
@@ -17,11 +18,12 @@ import { useStoreWorkspace } from '../app/route-guards/StoreMemberGuard';
 import { categoriesService } from '../services/categories.service';
 import { productsService } from '../services/products.service';
 import { optionsService } from '../services/options.service';
+import { variantsService } from '../services/variants.service';
 import { storageService } from '../services/storage.service';
 import { productSchema, type ProductFormValues } from '../lib/validators/product.schema';
 import { formatBRL } from '../lib/formatters';
 import { isSubscriptionWritable } from '../lib/permissions';
-import type { ProductRow, PublicMenuProduct } from '../types/domain';
+import type { ProductRow, ProductVariantRow, PublicMenuProduct } from '../types/domain';
 import { Badge, Card } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea } from '../components/ui/Input';
@@ -30,6 +32,7 @@ import { ConfirmDialog, Modal } from '../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingSpinner } from '../components/ui/Feedback';
 import { useToast } from '../components/ui/Toast';
 import { ProductOptionsManager } from '../components/store-admin/ProductOptionsManager';
+import { ProductVariantsManager } from '../components/store-admin/ProductVariantsManager';
 import { PublicProductModal } from '../components/menu/PublicProductModal';
 
 export function ProductsPage() {
@@ -50,12 +53,18 @@ export function ProductsPage() {
   const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
 
   const [optionsProduct, setOptionsProduct] = useState<ProductRow | null>(null);
+  const [variantsProductId, setVariantsProductId] = useState<string | null>(null);
   const [previewProduct, setPreviewProduct] = useState<PublicMenuProduct | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductRow | null>(null);
 
   const { data: categories = [], isLoading: catLoading } = useQuery({
     queryKey: ['categories', storeId],
     queryFn: () => categoriesService.listByStore(storeId),
+  });
+
+  const { data: storeVariants = [] } = useQuery({
+    queryKey: ['store-variants', storeId],
+    queryFn: () => variantsService.listByStore(storeId),
   });
 
   const {
@@ -85,6 +94,21 @@ export function ProductsPage() {
   const categoryNameMap = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name])),
     [categories]
+  );
+
+  const variantsByProduct = useMemo(() => {
+    const map = new Map<string, ProductVariantRow[]>();
+    for (const v of storeVariants) {
+      const list = map.get(v.product_id) ?? [];
+      list.push(v);
+      map.set(v.product_id, list);
+    }
+    return map;
+  }, [storeVariants]);
+
+  const variantsProduct = useMemo(
+    () => (variantsProductId ? (products.find((p) => p.id === variantsProductId) ?? null) : null),
+    [products, variantsProductId]
   );
 
   const filtered = useMemo(() => {
@@ -238,7 +262,10 @@ export function ProductsPage() {
   }
 
   async function openPreview(product: ProductRow) {
-    const groups = await optionsService.listByProduct(storeId, product.id).catch(() => []);
+    const [groups, variants] = await Promise.all([
+      optionsService.listByProduct(storeId, product.id).catch(() => []),
+      variantsService.listByProduct(storeId, product.id).catch(() => []),
+    ]);
     setPreviewProduct({
       id: product.id,
       category_id: product.category_id,
@@ -249,6 +276,13 @@ export function ProductsPage() {
       is_available: product.is_available,
       is_featured: product.is_featured,
       sort_order: product.sort_order,
+      variant_label: product.variant_label,
+      variants: variants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        is_available: v.is_available,
+        sort_order: v.sort_order,
+      })),
       promotion: null,
       option_groups: groups
         .filter((g) => g.is_active)
@@ -414,6 +448,25 @@ export function ProductsPage() {
                               {product.description}
                             </p>
                           ) : null}
+                          {(variantsByProduct.get(product.id)?.length ?? 0) > 0 ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                              <span className="text-[11px] font-semibold text-slate-500">
+                                {product.variant_label || 'Variantes'}:
+                              </span>
+                              {(variantsByProduct.get(product.id) ?? []).map((v) => (
+                                <span
+                                  key={v.id}
+                                  className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                    v.is_available
+                                      ? 'bg-slate-100 text-slate-700'
+                                      : 'bg-slate-100 text-slate-400 line-through'
+                                  }`}
+                                >
+                                  {v.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
 
@@ -430,6 +483,17 @@ export function ProductsPage() {
                           }
                         >
                           {product.is_available ? 'Marcar indisponível' : 'Marcar disponível'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setVariantsProductId(product.id)}
+                        >
+                          <Layers className="h-3.5 w-3.5" />
+                          Variantes
+                          {(variantsByProduct.get(product.id)?.length ?? 0) > 0
+                            ? ` (${variantsByProduct.get(product.id)!.length})`
+                            : ''}
                         </Button>
                         <Button
                           variant="outline"
@@ -605,6 +669,16 @@ export function ProductsPage() {
           </div>
         </form>
       </Modal>
+
+      {variantsProduct ? (
+        <ProductVariantsManager
+          open={Boolean(variantsProduct)}
+          onClose={() => setVariantsProductId(null)}
+          storeId={storeId}
+          product={variantsProduct}
+          disabled={!writable}
+        />
+      ) : null}
 
       {optionsProduct ? (
         <ProductOptionsManager

@@ -425,6 +425,7 @@ export interface Database {
           is_available: boolean;
           is_featured: boolean;
           sort_order: number;
+          variant_label: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -440,6 +441,7 @@ export interface Database {
           is_available?: boolean;
           is_featured?: boolean;
           sort_order?: number;
+          variant_label?: string | null;
         };
         Update: {
           category_id?: string;
@@ -450,6 +452,33 @@ export interface Database {
           is_active?: boolean;
           is_available?: boolean;
           is_featured?: boolean;
+          sort_order?: number;
+          variant_label?: string | null;
+        };
+        Relationships: [];
+      };
+      product_variants: {
+        Row: {
+          id: string;
+          store_id: string;
+          product_id: string;
+          name: string;
+          is_available: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          product_id: string;
+          name: string;
+          is_available?: boolean;
+          sort_order?: number;
+        };
+        Update: {
+          name?: string;
+          is_available?: boolean;
           sort_order?: number;
         };
         Relationships: [];

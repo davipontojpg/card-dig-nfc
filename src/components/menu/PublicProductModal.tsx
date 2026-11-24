@@ -1,9 +1,10 @@
+import { useEffect, useState } from 'react';
 import { getAccessibleTextColor, formatBRL } from '../../lib/formatters';
 import { storageService } from '../../services/storage.service';
 import type { PublicMenuProduct } from '../../types/domain';
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
-import { Tag, AlertCircle } from 'lucide-react';
+import { Tag, AlertCircle, Check } from 'lucide-react';
 
 interface PublicProductModalProps {
   product: PublicMenuProduct | null;
@@ -12,10 +13,17 @@ interface PublicProductModalProps {
 }
 
 export function PublicProductModal({ product, accentColor, onClose }: PublicProductModalProps) {
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedVariantId(null);
+  }, [product?.id]);
+
   if (!product) return null;
 
   const imageUrl = storageService.getPublicUrl(product.image_path);
   const contrastText = getAccessibleTextColor(accentColor);
+  const variants = product.variants ?? [];
 
   return (
     <Modal
@@ -76,6 +84,63 @@ export function PublicProductModal({ product, accentColor, onClose }: PublicProd
           ) : null}
         </div>
 
+        {/* Variantes do item (ex.: Sabores) */}
+        {variants.length > 0 ? (
+          <div className="space-y-2.5 pt-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold tracking-wide text-slate-900 uppercase">
+                {product.variant_label || 'Variantes'}
+              </h3>
+              <span className="text-xs text-slate-500">
+                {variants.filter((v) => v.is_available).length} de {variants.length}{' '}
+                {variants.length === 1 ? 'disponível' : 'disponíveis'}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {variants.map((variant) => {
+                const isSelected = selectedVariantId === variant.id && variant.is_available;
+                const isDisabled = !variant.is_available || !product.is_available;
+
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    disabled={isDisabled}
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      if (isDisabled) return;
+                      setSelectedVariantId((prev) => (prev === variant.id ? null : variant.id));
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all ${
+                      !variant.is_available
+                        ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-55'
+                        : isSelected
+                          ? 'border-transparent shadow-xs'
+                          : 'border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50'
+                    }`}
+                    style={
+                      isSelected
+                        ? { backgroundColor: accentColor, color: contrastText }
+                        : undefined
+                    }
+                  >
+                    {isSelected ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+                    <span className={!variant.is_available ? 'line-through' : ''}>
+                      {variant.name}
+                    </span>
+                    {!variant.is_available ? (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        (Esgotado)
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         {product.option_groups.length > 0 ? (
           <div className="space-y-3 pt-1">
             <h3 className="text-sm font-bold tracking-wide text-slate-900 uppercase">
@@ -134,4 +199,3 @@ export function PublicProductModal({ product, accentColor, onClose }: PublicProd
     </Modal>
   );
 }
-

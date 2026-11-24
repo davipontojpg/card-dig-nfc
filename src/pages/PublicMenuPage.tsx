@@ -54,7 +54,8 @@ export function PublicMenuPage() {
         products: cat.products.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
-            (p.description ?? '').toLowerCase().includes(q)
+            (p.description ?? '').toLowerCase().includes(q) ||
+            (p.variants ?? []).some((v) => v.name.toLowerCase().includes(q))
         ),
       }))
       .filter((cat) => cat.products.length > 0);
@@ -345,6 +346,31 @@ export function PublicMenuPage() {
                             <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 sm:text-sm">
                               {product.description}
                             </p>
+                          ) : null}
+
+                          {(product.variants?.length ?? 0) > 0 ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                              <span className="text-[11px] font-semibold text-slate-500">
+                                {product.variant_label || 'Variantes'}:
+                              </span>
+                              {(product.variants ?? []).slice(0, 4).map((v) => (
+                                <span
+                                  key={v.id}
+                                  className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                    v.is_available
+                                      ? 'bg-slate-100 text-slate-700'
+                                      : 'bg-slate-100 text-slate-400 opacity-60 line-through'
+                                  }`}
+                                >
+                                  {v.name}
+                                </span>
+                              ))}
+                              {(product.variants?.length ?? 0) > 4 ? (
+                                <span className="text-[11px] font-medium text-slate-500">
+                                  +{(product.variants?.length ?? 0) - 4}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
 

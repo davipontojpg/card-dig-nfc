@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -269,5 +269,79 @@ describe('PublicMenuPage', () => {
     });
 
     expect(screen.getByText(/Modo prévia/i)).toBeInTheDocument();
+  });
+
+  it('exibe variantes disponíveis selecionáveis e bloqueia variantes esgotadas', async () => {
+    vi.spyOn(publicMenuService, 'getBySlug').mockResolvedValue({
+      status: 'ok',
+      evaluated_at: '2026-11-24T22:00:00Z',
+      store: {
+        id: 'store-4',
+        name: 'Conveniência Express',
+        slug: 'conveniencia-express',
+        business_type: 'Conveniência',
+        description: null,
+        logo_path: null,
+        primary_color: '#0f766e',
+        public_phone: null,
+        public_address: null,
+        timezone: 'America/Sao_Paulo',
+      },
+      features: {
+        digital_menu: true,
+        qr_code: true,
+        basic_promotions: false,
+        scheduled_promotions: false,
+      },
+      active_promotions: [],
+      categories: [
+        {
+          id: 'cat-4',
+          name: 'Energéticos',
+          description: null,
+          sort_order: 1,
+          products: [
+            {
+              id: 'prod-monster',
+              category_id: 'cat-4',
+              name: 'Monster',
+              description: 'Lata 473ml',
+              price: 12,
+              image_path: null,
+              is_available: true,
+              is_featured: false,
+              sort_order: 1,
+              variant_label: 'Sabores',
+              variants: [
+                { id: 'v-1', name: 'Manga', is_available: true, sort_order: 1 },
+                { id: 'v-2', name: 'Morango', is_available: false, sort_order: 2 },
+                { id: 'v-3', name: 'Maçã Verde', is_available: true, sort_order: 3 },
+              ],
+              promotion: null,
+              option_groups: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    const user = userEvent.setup();
+    renderPublicMenu('conveniencia-express');
+
+    await waitFor(() => {
+      expect(screen.getByText('Monster')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Monster'));
+
+    const dialog = await screen.findByRole('dialog');
+    const mangaBtn = within(dialog).getByRole('button', { name: /^Manga$/i });
+    const morangoBtn = within(dialog).getByRole('button', { name: /Morango/i });
+
+    expect(mangaBtn).not.toBeDisabled();
+    expect(morangoBtn).toBeDisabled();
+
+    await user.click(mangaBtn);
+    expect(mangaBtn).toHaveAttribute('aria-pressed', 'true');
   });
 });

@@ -24,6 +24,7 @@ export type OnboardingTaskRow = Database['public']['Tables']['store_onboarding_t
 export type PlatformAuditLogRow = Database['public']['Tables']['platform_audit_logs']['Row'];
 export type CategoryRow = Database['public']['Tables']['categories']['Row'];
 export type ProductRow = Database['public']['Tables']['products']['Row'];
+export type ProductVariantRow = Database['public']['Tables']['product_variants']['Row'];
 export type OptionGroupRow = Database['public']['Tables']['option_groups']['Row'];
 export type ProductOptionRow = Database['public']['Tables']['product_options']['Row'];
 export type PromotionRow = Database['public']['Tables']['promotions']['Row'];
@@ -140,6 +141,13 @@ export interface PublicAppliedPromotion {
   schedule_type: PromotionScheduleType;
 }
 
+export interface PublicProductVariant {
+  id: string;
+  name: string;
+  is_available: boolean;
+  sort_order: number;
+}
+
 export interface PublicMenuProduct {
   id: string;
   category_id: string;
@@ -150,6 +158,8 @@ export interface PublicMenuProduct {
   is_available: boolean;
   is_featured: boolean;
   sort_order: number;
+  variant_label?: string | null;
+  variants?: PublicProductVariant[];
   promotion: PublicAppliedPromotion | null;
   option_groups: PublicOptionGroup[];
 }
