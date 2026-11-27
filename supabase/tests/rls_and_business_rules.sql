@@ -52,8 +52,8 @@ begin
 
   perform pg_temp.assert_true(
     (select array_agg(feature_key order by feature_key) from public.plan_features pf join public.plans p on p.id = pf.plan_id where p.code = 'menu')
-    = array['digital_menu', 'qr_code'],
-    'Plano menu deve conter exatamente digital_menu e qr_code.'
+    = array['basic_promotions', 'digital_menu', 'qr_code'],
+    'Plano menu deve conter basic_promotions, digital_menu e qr_code.'
   );
   perform pg_temp.assert_true(
     (select array_agg(feature_key order by feature_key) from public.plan_features pf join public.plans p on p.id = pf.plan_id where p.code = 'menu_nfc')
@@ -224,7 +224,18 @@ begin
   end;
   perform pg_temp.assert_true(v_failed, 'Owner não pode alterar lifecycle_status.');
 
-  -- Owner A (Plano 1) NÃO pode criar promoção nem chamar get_promotion_conflicts
+  -- Owner A (Plano 1) PODE usar promoção comum direta (promo_price), mas NÃO pode criar promoção agendada nem lote/combo
+  update public.products set promo_price = 69.90, promo_highlight_top = true where id = v_prod_a;
+
+  -- Check constraint impede promo_price >= price
+  v_failed := false;
+  begin
+    update public.products set promo_price = 80.00 where id = v_prod_a;
+  exception when check_violation then
+    v_failed := true;
+  end;
+  perform pg_temp.assert_true(v_failed, 'Check constraint deve rejeitar promo_price >= price.');
+
   v_failed := false;
   begin
     insert into public.promotions (store_id, name, schedule_type, discount_type, discount_value, starts_at, ends_at)
@@ -232,15 +243,16 @@ begin
   exception when insufficient_privilege then
     v_failed := true;
   end;
-  perform pg_temp.assert_true(v_failed, 'Plano 1 não pode inserir promoção via RLS.');
+  perform pg_temp.assert_true(v_failed, 'Plano 1 não pode inserir promoção agendada via RLS.');
 
   v_failed := false;
   begin
-    perform public.get_promotion_conflicts(v_store_a);
+    insert into public.promotion_bundles (store_id, name, promo_price)
+    values (v_store_a, 'Hack Combo Plano 1', 49.90);
   exception when insufficient_privilege then
     v_failed := true;
   end;
-  perform pg_temp.assert_true(v_failed, 'Plano 1 não pode chamar get_promotion_conflicts.');
+  perform pg_temp.assert_true(v_failed, 'Plano 1 não pode inserir promoção em lote (combo) via RLS.');
 
   -- Editor A não lê store_subscriptions nem altera stores
   perform pg_temp.set_actor('authenticated', v_editor_a);
@@ -507,6 +519,149 @@ begin
     v_failed := true;
   end;
   perform pg_temp.assert_true(v_failed, 'Logs de auditoria devem ser imutáveis (append-only).');
+
+  -- ============================================================================
+  -- 10. Onboarding Self-Service (pending_setup), Variantes, Lotes e Prévia Privada
+  -- ============================================================================
+  declare
+    v_store_draft uuid := 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    v_owner_d uuid := '88888888-8888-8888-8888-888888888888';
+    v_cat_d uuid := 'd4444444-4444-4444-4444-444444444444';
+    v_prod_d uuid := 'd5555555-5555-5555-5555-555555555555';
+    v_bundle_c uuid := 'c9999999-9999-9999-9999-999999999999';
+  begin
+    insert into auth.users (id, email, raw_user_meta_data)
+    values (v_owner_d, 'owner_d@loja.test', '{"full_name":"Dono Loja D"}');
+
+    perform pg_temp.set_actor('authenticated', v_oper_id);
+    insert into public.stores (id, name, slug, primary_color, timezone, is_published, lifecycle_status, onboarding_status)
+    values (v_store_draft, 'Loja Rascunho', 'loja-rascunho', '#0f766e', 'America/Sao_Paulo', false, 'pending_setup', 'pending_data');
+
+    insert into public.store_subscriptions (store_id, plan_id, status, monthly_price_snapshot, setup_fee_snapshot, setup_fee_status, started_at)
+    values (v_store_draft, v_plan_1, 'trialing', 19.90, 100.00, 'pending', now());
+
+    insert into public.store_memberships (store_id, user_id, role)
+    values (v_store_draft, v_owner_d, 'owner');
+
+    -- Dono em pending_setup PODE subir logo, criar categoria, produto e variante
+    perform pg_temp.set_actor('authenticated', v_owner_d);
+    insert into storage.objects (bucket_id, name, owner)
+    values ('menu-media', v_store_draft::text || '/branding/logo-draft.png', v_owner_d);
+
+    insert into public.categories (id, store_id, name, sort_order)
+    values (v_cat_d, v_store_draft, 'Bebidas', 1);
+
+    insert into public.products (id, store_id, category_id, name, price, variant_label)
+    values (v_prod_d, v_store_draft, v_cat_d, 'Monster', 12.00, 'Sabores');
+
+    insert into public.product_variants (store_id, product_id, name, is_available, sort_order)
+    values
+      (v_store_draft, v_prod_d, 'Manga', true, 1),
+      (v_store_draft, v_prod_d, 'Morango', false, 2);
+
+    -- Dono NÃO pode publicar diretamente enquanto pending_setup nem forjar onboarding_status via UPDATE
+    v_failed := false;
+    begin
+      update public.stores set is_published = true where id = v_store_draft;
+    exception when others then
+      v_failed := true;
+    end;
+    perform pg_temp.assert_true(v_failed, 'Dono não pode publicar loja em pending_setup sem aprovação.');
+
+    v_failed := false;
+    begin
+      update public.stores set onboarding_status = 'completed' where id = v_store_draft;
+    exception when others then
+      v_failed := true;
+    end;
+    perform pg_temp.assert_true(v_failed, 'Dono não pode alterar onboarding_status diretamente.');
+
+    -- Público anônimo NÃO vê loja em pending_setup, nem na prévia privada
+    perform pg_temp.set_actor('anon', null);
+    v_res := public.get_public_menu('loja-rascunho');
+    perform pg_temp.assert_true((v_res ->> 'status') = 'unpublished', 'Anônimo não pode ver cardápio em rascunho.');
+
+    -- Dono de outra loja (Owner A) NÃO pode ver prévia privada da Loja D nem ler suas variantes
+    perform pg_temp.set_actor('authenticated', v_owner_a);
+    v_res := public.get_store_menu_preview('loja-rascunho');
+    perform pg_temp.assert_true((v_res ->> 'status') = 'unavailable', 'Outro tenant não pode abrir prévia privada.');
+    select count(*) into v_cnt from public.product_variants where store_id = v_store_draft;
+    perform pg_temp.assert_true(v_cnt = 0, 'Outro tenant não pode ler variantes de outra loja.');
+
+    -- Dono D PODE abrir prévia privada e enviar para revisão
+    perform pg_temp.set_actor('authenticated', v_owner_d);
+    v_res := public.get_store_menu_preview('loja-rascunho');
+    perform pg_temp.assert_true((v_res ->> 'status') = 'ok' and (v_res ->> 'is_preview') = 'true', 'Dono deve conseguir ver prévia privada.');
+    perform pg_temp.assert_true(jsonb_array_length(v_res -> 'categories' -> 0 -> 'products' -> 0 -> 'variants') = 2, 'Prévia deve retornar variantes do produto.');
+
+    perform public.store_submit_onboarding_review(v_store_draft);
+    perform pg_temp.assert_true(
+      (select onboarding_status from public.stores where id = v_store_draft) = 'ready',
+      'Enviar para revisão deve mudar onboarding_status para ready.'
+    );
+
+    -- Dono NÃO pode chamar platform_review_store_onboarding
+    v_failed := false;
+    begin
+      perform public.platform_review_store_onboarding(v_store_draft, 'approve_and_publish', null);
+    exception when insufficient_privilege then
+      v_failed := true;
+    end;
+    perform pg_temp.assert_true(v_failed, 'Dono não pode autoaprovar revisão de onboarding.');
+
+    -- Operador aprova e publica -> loja vai ao ar imediatamente e dono edita livremente depois
+    perform pg_temp.set_actor('authenticated', v_oper_id);
+    perform public.platform_review_store_onboarding(v_store_draft, 'request_changes', 'Envie logo transparente');
+    perform pg_temp.assert_true(
+      (select onboarding_status from public.stores where id = v_store_draft) = 'awaiting_client',
+      'Solicitar ajustes deve mudar status para awaiting_client.'
+    );
+
+    perform public.platform_review_store_onboarding(v_store_draft, 'approve_and_publish', null);
+    perform pg_temp.set_actor('anon', null);
+    v_res := public.get_public_menu('loja-rascunho');
+    perform pg_temp.assert_true((v_res ->> 'status') = 'ok', 'Após aprovação, cardápio público deve estar no ar.');
+
+    -- Após publicado, dono altera preço livremente sem revisão
+    perform pg_temp.set_actor('authenticated', v_owner_d);
+    update public.products set price = 14.00 where id = v_prod_d;
+    perform pg_temp.set_actor('anon', null);
+    v_res := public.get_public_menu('loja-rascunho');
+    perform pg_temp.assert_true(
+      ((v_res -> 'categories' -> 0 -> 'products' -> 0 ->> 'price')::numeric) = 14.00,
+      'Alterações pós-publicação entram no ar imediatamente.'
+    );
+
+    -- Validar Promoções em Lote (Combos) no Plano 3 e bloqueio cross-tenant
+    reset role;
+    update public.store_subscriptions set status = 'active' where store_id = v_store_c;
+    perform pg_temp.set_actor('authenticated', v_owner_c);
+    insert into public.promotion_bundles (id, store_id, name, promo_price, highlight_top, is_active)
+    values (v_bundle_c, v_store_c, 'Combo Galera', 74.90, true, true);
+
+    insert into public.promotion_bundle_items (store_id, bundle_id, product_id, quantity)
+    values
+      (v_store_c, v_bundle_c, v_prod_c1, 1),
+      (v_store_c, v_bundle_c, v_prod_c2, 1);
+
+    -- FK composta impede vincular produto de outra loja em um combo
+    v_failed := false;
+    begin
+      insert into public.promotion_bundle_items (store_id, bundle_id, product_id, quantity)
+      values (v_store_c, v_bundle_c, v_prod_d, 1);
+    exception when foreign_key_violation then
+      v_failed := true;
+    end;
+    perform pg_temp.assert_true(v_failed, 'FK composta deve impedir produto de outra loja no combo.');
+
+    perform pg_temp.set_actor('anon', null);
+    v_res := public.get_public_menu('bistro-gama');
+    perform pg_temp.assert_true(jsonb_array_length(v_res -> 'bundles') = 1, 'Combo ativo deve aparecer no cardápio público do Plano 3.');
+    perform pg_temp.assert_true(
+      ((v_res -> 'bundles' -> 0 ->> 'regular_total')::numeric) = 90.00,
+      'Soma comum do combo (50 + 40) deve ser R$ 90,00.'
+    );
+  end;
 
   raise notice 'TODOS OS TESTES DE BANCO, RLS, PLANOS, PROMOÇÕES E STORAGE PASSARAM!';
 end $$;

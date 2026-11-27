@@ -31,11 +31,11 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
       <aside className="hidden w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 text-zinc-100 lg:flex">
         <div className="border-b border-zinc-800 px-5 py-5">
           <Link to="/platform" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-zinc-950">
-              MF
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent font-display text-base font-extrabold text-white">
+              T
             </span>
             <div>
-              <p className="text-sm font-bold text-white">MenuFlow SaaS</p>
+              <p className="font-display text-base font-bold tracking-tight text-white">Tápio</p>
               <p className="text-xs text-zinc-400">Console do Operador</p>
             </div>
           </Link>
@@ -88,10 +88,10 @@ export function PlatformLayout({ children }: { children: ReactNode }) {
       {/* Mobile Header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-white lg:hidden">
         <Link to="/platform" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-bold text-zinc-950">
-            MF
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent font-display text-sm font-extrabold text-white">
+            T
           </span>
-          <span className="text-sm font-bold">MenuFlow Console</span>
+          <span className="font-display text-sm font-bold">Tápio Console</span>
         </Link>
         <button
           type="button"

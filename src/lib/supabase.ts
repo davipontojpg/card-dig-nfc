@@ -12,6 +12,7 @@ export const supabase = createClient<Database>(env.supabaseUrl, env.supabasePubl
 
 export function getPublicStorageUrl(bucket: string, path: string | null | undefined): string | null {
   if (!path) return null;
+  if (/^https?:\/\//i.test(path) || path.startsWith('/')) return path;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
